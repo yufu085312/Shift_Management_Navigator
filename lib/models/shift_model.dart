@@ -14,6 +14,8 @@ class ShiftModel with _$ShiftModel {
     required String startTime, // HH:mm
     required String endTime, // HH:mm
     @Default('draft') String status, // "draft" or "confirmed"
+    String? requestStatus, // "pending_change", "pending_substitute"
+    String? requestId, // 関連する申請ID
     @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
     DateTime? createdAt,
     @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)

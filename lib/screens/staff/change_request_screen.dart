@@ -5,6 +5,7 @@ import '../../providers/staff_provider.dart';
 import '../../providers/shift_provider.dart';
 import '../../providers/shift_request_provider.dart';
 import '../../models/shift_model.dart';
+import '../../services/notification_service.dart';
 
 class ChangeRequestScreen extends ConsumerStatefulWidget {
   const ChangeRequestScreen({super.key});
@@ -16,6 +17,8 @@ class ChangeRequestScreen extends ConsumerStatefulWidget {
 class _ChangeRequestScreenState extends ConsumerState<ChangeRequestScreen> {
   ShiftModel? _selectedShift;
   String _requestType = 'change'; // 'change' or 'substitute'
+  String? _newStartTime;
+  String? _newEndTime;
   final _reasonController = TextEditingController();
   bool _isLoading = false;
 
@@ -40,6 +43,13 @@ class _ChangeRequestScreenState extends ConsumerState<ChangeRequestScreen> {
       return;
     }
 
+    if (_requestType == 'change' && (_newStartTime == null || _newEndTime == null)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('変更後の時間を指定してください')),
+      );
+      return;
+    }
+
     final staff = ref.read(currentStaffProvider).value;
     if (staff == null) return;
 
@@ -53,10 +63,31 @@ class _ChangeRequestScreenState extends ConsumerState<ChangeRequestScreen> {
         staffId: staff.id,
         type: _requestType,
         date: _selectedShift!.date,
-        startTime: _selectedShift!.startTime,
-        endTime: _selectedShift!.endTime,
+        startTime: _requestType == 'change' ? _newStartTime : _selectedShift!.startTime,
+        endTime: _requestType == 'change' ? _newEndTime : _selectedShift!.endTime,
         reason: _reasonController.text,
+        targetShiftId: _selectedShift!.id,
       );
+
+      // 通知処理 (失敗しても申請自体は完了とする)
+      try {
+        final notificationService = ref.read(notificationServiceProvider);
+        if (_requestType == 'substitute') {
+          await notificationService.notifyAllStaff(
+            storeId: staff.storeId,
+            title: '代打募集中',
+            body: '${staff.name}さんが${_selectedShift!.date}の代打を募集しています。',
+          );
+        } else if (_requestType == 'change') {
+          await notificationService.notifyAdmins(
+            storeId: staff.storeId,
+            title: '時間変更申請',
+            body: '${staff.name}さんが${_selectedShift!.date}の時間を $_newStartTime - $_newEndTime へ変更申請しました。',
+          );
+        }
+      } catch (notifyError) {
+        // 通知失敗はログに出力せず静かに処理
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -68,7 +99,7 @@ class _ChangeRequestScreenState extends ConsumerState<ChangeRequestScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('エラー: $e')),
+          SnackBar(content: Text('エラーが発生しました: $e')),
         );
       }
     } finally {
@@ -171,6 +202,68 @@ class _ChangeRequestScreenState extends ConsumerState<ChangeRequestScreen> {
                   loading: () => const Center(child: CircularProgressIndicator()),
                   error: (e, _) => Text('エラー: $e'),
                 ),
+                if (_requestType == 'change' && _selectedShift != null) ...[
+                  const SizedBox(height: 24),
+                  const Text(
+                    '変更後の時間を指定',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final time = await showTimePicker(
+                              context: context,
+                              initialTime: _newStartTime != null 
+                                ? TimeOfDay(
+                                    hour: int.parse(_newStartTime!.split(':')[0]), 
+                                    minute: int.parse(_newStartTime!.split(':')[1])
+                                  )
+                                : TimeOfDay(
+                                    hour: int.parse(_selectedShift!.startTime.split(':')[0]), 
+                                    minute: int.parse(_selectedShift!.startTime.split(':')[1])
+                                  ),
+                            );
+                            if (time != null) {
+                              setState(() => _newStartTime = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}');
+                            }
+                          },
+                          icon: const Icon(Icons.access_time),
+                          label: Text(_newStartTime ?? '開始時間'),
+                        ),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8),
+                        child: Text('〜'),
+                      ),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final time = await showTimePicker(
+                              context: context,
+                              initialTime: _newEndTime != null 
+                                ? TimeOfDay(
+                                    hour: int.parse(_newEndTime!.split(':')[0]), 
+                                    minute: int.parse(_newEndTime!.split(':')[1])
+                                  )
+                                : TimeOfDay(
+                                    hour: int.parse(_selectedShift!.endTime.split(':')[0]), 
+                                    minute: int.parse(_selectedShift!.endTime.split(':')[1])
+                                  ),
+                            );
+                            if (time != null) {
+                              setState(() => _newEndTime = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}');
+                            }
+                          },
+                          icon: const Icon(Icons.access_time),
+                          label: Text(_newEndTime ?? '終了時間'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 24),
                 TextField(
                   controller: _reasonController,

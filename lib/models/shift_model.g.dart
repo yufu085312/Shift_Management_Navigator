@@ -15,6 +15,8 @@ _$ShiftModelImpl _$$ShiftModelImplFromJson(Map<String, dynamic> json) =>
       startTime: json['startTime'] as String,
       endTime: json['endTime'] as String,
       status: json['status'] as String? ?? 'draft',
+      requestStatus: json['requestStatus'] as String?,
+      requestId: json['requestId'] as String?,
       createdAt: _timestampFromJson(json['createdAt']),
       updatedAt: _timestampFromJson(json['updatedAt']),
     );
@@ -28,6 +30,8 @@ Map<String, dynamic> _$$ShiftModelImplToJson(_$ShiftModelImpl instance) =>
       'startTime': instance.startTime,
       'endTime': instance.endTime,
       'status': instance.status,
+      'requestStatus': instance.requestStatus,
+      'requestId': instance.requestId,
       'createdAt': _timestampToJson(instance.createdAt),
       'updatedAt': _timestampToJson(instance.updatedAt),
     };

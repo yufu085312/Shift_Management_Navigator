@@ -105,6 +105,20 @@ class AuthRepository {
     }
   }
 
+  // 店舗の特定のロールのユーザー一覧を取得
+  Future<List<UserModel>> getUsersByStoreAndRole(String storeId, String role) async {
+    // 複合インデックスを避けるため、店舗IDのみで引いてメモリ内でフィルタリング
+    final querySnapshot = await _firestore
+        .collection('users')
+        .where('storeId', isEqualTo: storeId)
+        .get();
+
+    return querySnapshot.docs
+        .map((doc) => UserModel.fromFirestore(doc))
+        .where((user) => user.role == role)
+        .toList();
+  }
+
   // Firebase Authエラーハンドリング
   String _handleAuthException(FirebaseAuthException e) {
     switch (e.code) {

@@ -9,6 +9,7 @@ import '../../models/staff_model.dart';
 import 'wish_submission_screen.dart';
 import 'change_request_screen.dart';
 import 'notifications_screen.dart';
+import 'substitute_recruitment_screen.dart';
 
 class MyShiftScreen extends ConsumerStatefulWidget {
   const MyShiftScreen({super.key});
@@ -30,6 +31,16 @@ class _MyShiftScreenState extends ConsumerState<MyShiftScreen> {
       appBar: AppBar(
         title: const Text('マイシフト'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.group_add),
+            tooltip: '代打募集一覧',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SubstituteRecruitmentScreen()),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
@@ -195,22 +206,26 @@ class _MyShiftScreenState extends ConsumerState<MyShiftScreen> {
           itemBuilder: (context, index) {
             final shift = allShifts[index];
             final isDraft = shift.status == 'draft';
+            final isUnderRequest = shift.requestStatus != null;
             
             return Card(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: ListTile(
                 leading: Icon(
                   Icons.access_time, 
-                  color: isDraft ? Colors.orange : Colors.blue
+                  color: isUnderRequest ? Colors.purple : (isDraft ? Colors.orange : Colors.blue)
                 ),
                 title: Text(
-                  '勤務時間${isDraft ? ' (承認済み・公開待ち)' : ''}',
-                  style: isDraft ? const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold) : null,
+                  '勤務時間${isDraft ? ' (公開待ち)' : (isUnderRequest ? ' (申請中)' : '')}',
+                  style: (isDraft || isUnderRequest) ? TextStyle(
+                    color: isUnderRequest ? Colors.purple : Colors.orange, 
+                    fontWeight: FontWeight.bold
+                  ) : null,
                 ),
                 subtitle: Text('${shift.startTime} - ${shift.endTime}'),
                 trailing: Icon(
-                  isDraft ? Icons.pending : Icons.check_circle, 
-                  color: isDraft ? Colors.orange : Colors.green
+                  isDraft ? Icons.pending : (isUnderRequest ? Icons.sync : Icons.check_circle), 
+                  color: isDraft ? Colors.orange : (isUnderRequest ? Colors.purple : Colors.green)
                 ),
               ),
             );

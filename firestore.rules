@@ -35,7 +35,7 @@ service cloud.firestore {
     
     // users コレクション
     match /users/{userId} {
-      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin() || isSameStore(resource.data.storeId));
       allow create: if isAuthenticated() && request.auth.uid == userId;
       allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       allow delete: if false;
@@ -78,7 +78,12 @@ service cloud.firestore {
       allow read: if isAuthenticated() && (isSameStore(resource.data.storeId) || isAdmin());
       allow create: if isAuthenticated() && 
                        get(/databases/$(database)/documents/staffs/$(request.resource.data.staffId)).data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && (isSameStore(resource.data.storeId) || isAdmin());
+      // 更新: 管理者、店舗メンバー、または志願時（volunteerStaffId の更新）を許可
+      allow update: if isAuthenticated() && (
+        isSameStore(resource.data.storeId) || 
+        isAdmin() ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['volunteerStaffId', 'updatedAt']))
+      );
       allow delete: if isAdmin();
     }
     

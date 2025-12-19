@@ -13,6 +13,7 @@ class ShiftRequestRepository {
     String? startTime,
     String? endTime,
     String? reason,
+    String? targetShiftId,
   }) async {
     final now = DateTime.now();
     final docRef = _firestore.collection('shift_requests').doc();
@@ -26,14 +27,35 @@ class ShiftRequestRepository {
       'endTime': endTime,
       'reason': reason,
       'status': 'pending',
+      'targetShiftId': targetShiftId,
       'createdAt': Timestamp.fromDate(now),
     };
 
-    await docRef.set(requestData);
+    // バッチ処理で申請作成とシフト更新を同時に行う
+    final batch = _firestore.batch();
+    batch.set(docRef, requestData);
+
+    if (targetShiftId != null && (type == 'change' || type == 'substitute')) {
+      batch.update(_firestore.collection('shifts').doc(targetShiftId), {
+        'requestStatus': 'pending_$type',
+        'requestId': docRef.id,
+        'updatedAt': Timestamp.fromDate(now),
+      });
+    }
+
+    await batch.commit();
 
     return ShiftRequestModel.fromJson({
       ...requestData,
       'id': docRef.id,
+    });
+  }
+
+  // 代打を志願する
+  Future<void> volunteerForSubstitute(String requestId, String staffId) async {
+    await _firestore.collection('shift_requests').doc(requestId).update({
+      'volunteerStaffId': staffId,
+      'updatedAt': Timestamp.fromDate(DateTime.now()),
     });
   }
 

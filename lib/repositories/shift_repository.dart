@@ -105,6 +105,9 @@ class ShiftRepository {
     String? startTime,
     String? endTime,
     String? status,
+    String? requestStatus,
+    String? requestId,
+    bool clearRequest = false,
   }) async {
     final updates = <String, dynamic>{
       'updatedAt': Timestamp.fromDate(DateTime.now()),
@@ -114,6 +117,14 @@ class ShiftRepository {
     if (startTime != null) updates['startTime'] = startTime;
     if (endTime != null) updates['endTime'] = endTime;
     if (status != null) updates['status'] = status;
+    
+    if (clearRequest) {
+      updates['requestStatus'] = FieldValue.delete();
+      updates['requestId'] = FieldValue.delete();
+    } else {
+      if (requestStatus != null) updates['requestStatus'] = requestStatus;
+      if (requestId != null) updates['requestId'] = requestId;
+    }
 
     await _firestore.collection('shifts').doc(shiftId).update(updates);
   }
@@ -156,6 +167,23 @@ class ShiftRepository {
 
     if (count > 0) {
       await batch.commit();
+    }
+  }
+
+  // 代打を募集しているシフト一覧を取得
+  Future<List<ShiftModel>> getRecruitingSubstitutes(String storeId) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection('shifts')
+          .where('storeId', isEqualTo: storeId)
+          .where('requestStatus', isEqualTo: 'pending_substitute')
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => ShiftModel.fromFirestore(doc))
+          .toList();
+    } catch (e) {
+      return [];
     }
   }
 }

@@ -16,6 +16,8 @@ class ShiftRequestModel with _$ShiftRequestModel {
     String? endTime, // HH:mm (optional for wish)
     String? reason,
     @Default('pending') String status, // "pending", "approved", "rejected"
+    String? targetShiftId, // 対象シフトID
+    String? volunteerStaffId, // 代打志願スタッフID
     @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
     DateTime? createdAt,
     @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)

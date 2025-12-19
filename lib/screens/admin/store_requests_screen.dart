@@ -39,6 +39,13 @@ class _StoreRequestsScreenState extends ConsumerState<StoreRequestsScreen> {
                 itemCount: requests.length,
                 itemBuilder: (context, index) {
                   final request = requests[index];
+                  // 志願者がいる場合は初期値としてセット
+                  if (request.type == 'substitute' && 
+                      request.volunteerStaffId != null && 
+                      !_selectedSubstitutes.containsKey(request.id)) {
+                    _selectedSubstitutes[request.id] = request.volunteerStaffId!;
+                  }
+
                   final staff = staffs.firstWhere(
                     (s) => s.id == request.staffId,
                     orElse: () => const StaffModel(
@@ -102,7 +109,28 @@ class _RequestListItem extends ConsumerWidget {
         children: [
           ListTile(
             title: Text('${staff.name} さん - ${request.type == 'wish' ? '希望' : (isSubstitute ? '代打' : '変更')}'),
-            subtitle: Text('${request.date} ${request.startTime ?? ''}-${request.endTime ?? ''}\n理由: ${request.reason ?? 'なし'}'),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${request.date} ${request.startTime ?? ''}-${request.endTime ?? ''}'),
+                Text('理由: ${request.reason ?? 'なし'}'),
+                if (isSubstitute && request.volunteerStaffId != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade100,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        '志願者あり',
+                        style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             trailing: request.status == 'pending' 
               ? Row(
                   mainAxisSize: MainAxisSize.min,
@@ -198,16 +226,29 @@ class _RequestListItem extends ConsumerWidget {
               staffId: newStaffId,
               startTime: request.startTime ?? shift.startTime,
               endTime: request.endTime ?? shift.endTime,
+              status: shift.status,
+              clearRequest: true,
             );
           }
         }
       } catch (e) {
-        debugPrint('Shift conversion error: $e');
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('シフト反映に失敗しました: $e'), backgroundColor: Colors.red),
           );
         }
+      }
+    } else if (newStatus == 'rejected') {
+      // 却下時もシフト側の申請フラグをクリアする
+      try {
+        if (request.targetShiftId != null) {
+          await shiftRepository.updateShift(
+            shiftId: request.targetShiftId!,
+            clearRequest: true,
+          );
+        }
+      } catch (e) {
+        // エラー時は静かに続行
       }
     }
 

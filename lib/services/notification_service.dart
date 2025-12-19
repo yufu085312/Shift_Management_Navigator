@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/staff_provider.dart';
 import '../providers/notification_provider.dart';
+import '../providers/auth_provider.dart';
 
 final notificationServiceProvider = Provider((ref) => NotificationService(ref));
 
@@ -47,5 +48,28 @@ class NotificationService {
       title: title,
       body: body,
     );
+  }
+
+  // 店舗の管理者に通知を送信
+  Future<void> notifyAdmins({
+    required String storeId,
+    required String title,
+    required String body,
+  }) async {
+    final authRepository = _ref.read(authRepositoryProvider);
+    final notificationRepository = _ref.read(notificationRepositoryProvider);
+
+    final admins = await authRepository.getUsersByStoreAndRole(storeId, 'admin');
+    
+    final batch = <Future>[];
+    for (final admin in admins) {
+      batch.add(notificationRepository.createNotification(
+        userId: admin.uid,
+        title: title,
+        body: body,
+      ));
+    }
+    
+    await Future.wait(batch);
   }
 }
