@@ -1,0 +1,93 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ヘルパー関数: ユーザーが認証済みか
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // ヘルパー関数: ユーザーの役割を取得
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    
+    // ヘルパー関数: ユーザーの店舗IDを取得
+    function getUserStoreId() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.storeId;
+    }
+    
+    // ヘルパー関数: 管理者かどうか
+    function isAdmin() {
+      return isAuthenticated() && getUserRole() == 'admin';
+    }
+    
+    // ヘルパー関数: スタッフかどうか
+    function isStaff() {
+      return isAuthenticated() && getUserRole() == 'staff';
+    }
+    
+    // ヘルパー関数: 同じ店舗に所属しているか
+    function isSameStore(storeId) {
+      return isAuthenticated() && getUserStoreId() == storeId;
+    }
+    
+    // users コレクション
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow delete: if false;
+    }
+    
+    // stores コレクション
+    match /stores/{storeId} {
+      // 読み取れるのは、認証済みユーザー（店舗検索・存在確認のため）
+      allow read: if isAuthenticated();
+      
+      // 作成: 管理者が自分をオーナーとして作成する場合
+      allow create: if isAdmin() && request.resource.data.ownerId == request.auth.uid;
+      
+      // 更新: 管理者かつその店舗のオーナー/メンバーであること
+      allow update: if isAdmin() && (isSameStore(storeId) || request.resource.data.ownerId == request.auth.uid);
+      
+      allow delete: if false;
+    }
+    
+    // staffs コレクション
+    match /staffs/{staffId} {
+      // 読み取り: 自分のデータ、または同じ店舗のメンバー、または管理者
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isSameStore(resource.data.storeId) || isAdmin());
+      // 作成: 自分のUIDでの作成、または管理者の操作
+      allow create: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || isAdmin());
+      // 更新: 自分のデータ、または管理者の操作
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+    
+    // shifts コレクション
+    match /shifts/{shiftId} {
+      allow read: if isAuthenticated() && (isSameStore(resource.data.storeId) || isAdmin());
+      allow create: if isAuthenticated() && (isSameStore(request.resource.data.storeId) || isAdmin());
+      allow update, delete: if isAuthenticated() && (isSameStore(resource.data.storeId) || isAdmin());
+    }
+    
+    // shift_requests コレクション
+    match /shift_requests/{requestId} {
+      allow read: if isAuthenticated() && (isSameStore(resource.data.storeId) || isAdmin());
+      allow create: if isAuthenticated() && 
+                       get(/databases/$(database)/documents/staffs/$(request.resource.data.staffId)).data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && (isSameStore(resource.data.storeId) || isAdmin());
+      allow delete: if isAdmin();
+    }
+    
+    // notifications コレクション
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && request.auth.uid == resource.data.userId;
+      allow update: if isAuthenticated() && request.auth.uid == resource.data.userId;
+      allow create: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+  }
+}

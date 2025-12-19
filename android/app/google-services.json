@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "714707690632",
+    "project_id": "shift-management-navigator",
+    "storage_bucket": "shift-management-navigator.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:714707690632:android:15fa2f9543e25a5d572b3d",
+        "android_client_info": {
+          "package_name": "com.shiftmanagement.shift_management_navigator"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyClfABxw4ZDv-yx-AcjFfUy5-9XQ99G7nA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

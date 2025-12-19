@@ -1,0 +1,51 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/staff_provider.dart';
+import '../providers/notification_provider.dart';
+
+final notificationServiceProvider = Provider((ref) => NotificationService(ref));
+
+class NotificationService {
+  final Ref _ref;
+
+  NotificationService(this._ref);
+
+  // 全スタッフに通知を送信
+  Future<void> notifyAllStaff({
+    required String storeId,
+    required String title,
+    required String body,
+  }) async {
+    final staffRepository = _ref.read(staffRepositoryProvider);
+    final notificationRepository = _ref.read(notificationRepositoryProvider);
+
+    final staffs = await staffRepository.getStaffsByStore(storeId);
+    
+    final batch = <Future>[];
+    for (final staff in staffs) {
+      final userId = staff.userId;
+      if (userId.isNotEmpty) {
+        batch.add(notificationRepository.createNotification(
+          userId: userId,
+          title: title,
+          body: body,
+        ));
+      }
+    }
+    
+    await Future.wait(batch);
+  }
+
+  // 特定のユーザーに通知を送信
+  Future<void> notifyUser({
+    required String userId,
+    required String title,
+    required String body,
+  }) async {
+    final notificationRepository = _ref.read(notificationRepositoryProvider);
+    await notificationRepository.createNotification(
+      userId: userId,
+      title: title,
+      body: body,
+    );
+  }
+}
