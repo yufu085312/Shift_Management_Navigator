@@ -6,6 +6,7 @@ import '../../providers/staff_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../models/staff_model.dart';
 import 'shift_create_screen.dart';
+import '../../core/constants/app_constants.dart';
 
 class StaffManagementScreen extends ConsumerStatefulWidget {
   const StaffManagementScreen({super.key});
@@ -22,11 +23,11 @@ class _StaffManagementScreenState extends ConsumerState<StaffManagementScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('スタッフ管理'),
+        title: const Text(AppConstants.titleStaffManagement),
         actions: [
           IconButton(
             icon: const Icon(Icons.calendar_month),
-            tooltip: 'シフト作成',
+            tooltip: AppConstants.titleShiftCreate,
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
@@ -47,7 +48,7 @@ class _StaffManagementScreenState extends ConsumerState<StaffManagementScreen> {
       body: currentUserAsync.when(
         data: (user) {
           if (user == null || user.storeId == null) {
-            return const Center(child: Text('店舗情報が見つかりません'));
+            return const Center(child: Text(AppConstants.errMsgNoStore));
           }
 
           final staffsAsync = ref.watch(storeStaffsProvider(user.storeId!));
@@ -65,22 +66,22 @@ class _StaffManagementScreenState extends ConsumerState<StaffManagementScreen> {
                   children: [
                     storeAsync.when(
                       data: (store) => Text(
-                        store?.name ?? '店舗名',
+                        store?.name ?? AppConstants.labelStoreName,
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       loading: () => const CircularProgressIndicator(),
-                      error: (_, _) => const Text('店舗名'),
+                      error: (_, _) => const Text(AppConstants.labelStoreName),
                     ),
                     staffCountAsync.when(
                       data: (count) {
                         final maxStaff = _getMaxStaffByPlan(
-                          storeAsync.value?.plan ?? 'free',
+                          storeAsync.value?.plan ?? AppConstants.planFree,
                         );
                         return Text(
-                          'スタッフ数: $count / $maxStaff',
+                          '${AppConstants.labelStaffCount}: $count / $maxStaff',
                           style: TextStyle(
                             color: count >= maxStaff ? Colors.red : Colors.grey,
                             fontWeight: FontWeight.bold,
@@ -112,19 +113,19 @@ class _StaffManagementScreenState extends ConsumerState<StaffManagementScreen> {
                               ),
                               const SizedBox(height: 24),
                               const Text(
-                                'スタッフを招待しましょう',
+                                AppConstants.labelInviteStaff,
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                               const SizedBox(height: 12),
-                              Text(
-                                'スタッフの方にこのアプリをインストールしてもらい、下記の「店舗ID」を入力してもらうことで、自動的にこちらの一覧に追加されます。',
+                              const Text(
+                                AppConstants.msgInviteNotice,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: Colors.grey.shade600,
+                                  color: Colors.grey,
                                 ),
                               ),
                               const SizedBox(height: 32),
@@ -148,14 +149,14 @@ class _StaffManagementScreenState extends ConsumerState<StaffManagementScreen> {
                     );
                   },
                   loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (error, _) => Center(child: Text('エラー: $error')),
+                  error: (error, _) => Center(child: Text('${AppConstants.errMsgGeneric}: $error')),
                 ),
               ),
             ],
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('エラー: $error')),
+        error: (error, _) => Center(child: Text('${AppConstants.errMsgGeneric}: $error')),
       ),
       floatingActionButton: currentUserAsync.maybeMap(
         data: (data) {
@@ -165,11 +166,11 @@ class _StaffManagementScreenState extends ConsumerState<StaffManagementScreen> {
             onPressed: () {
               Clipboard.setData(ClipboardData(text: user!.storeId!));
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('店舗IDをコピーしました。スタッフに共有してください。')),
+                const SnackBar(content: Text('${AppConstants.msgIdCopied}。${AppConstants.msgSharedToStaffSuffix}')),
               );
             },
             icon: const Icon(Icons.copy),
-            label: const Text('店舗IDをコピーして招待'),
+            label: const Text(AppConstants.labelCopyIdAndInvite),
             backgroundColor: Colors.blue,
           );
         },
@@ -191,7 +192,7 @@ class _StaffManagementScreenState extends ConsumerState<StaffManagementScreen> {
         child: Column(
           children: [
             const Text(
-              'あなたの店舗ID',
+              AppConstants.labelYourStoreId,
               style: TextStyle(fontSize: 12, color: Colors.blue),
             ),
             const SizedBox(height: 8),
@@ -208,11 +209,11 @@ class _StaffManagementScreenState extends ConsumerState<StaffManagementScreen> {
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: storeId));
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('店舗IDをコピーしました')),
+                  const SnackBar(content: Text(AppConstants.msgIdCopied)),
                 );
               },
               icon: const Icon(Icons.copy),
-              label: const Text('IDをコピーする'),
+              label: const Text(AppConstants.labelCopyId),
             ),
           ],
         ),
@@ -222,11 +223,11 @@ class _StaffManagementScreenState extends ConsumerState<StaffManagementScreen> {
 
   int _getMaxStaffByPlan(String plan) {
     switch (plan) {
-      case 'free':
+      case AppConstants.planFree:
         return 5;
-      case 'basic':
+      case AppConstants.planBasic:
         return 20;
-      case 'pro':
+      case AppConstants.planPro:
         return 999;
       default:
         return 5;
@@ -244,12 +245,12 @@ class _StaffManagementScreenState extends ConsumerState<StaffManagementScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('スタッフを削除'),
-        content: Text('${staff.name}さんを削除してもよろしいですか?'),
+        title: const Text(AppConstants.labelDeleteStaff),
+        content: Text('${staff.name}${AppConstants.msgDeleteStaffConfirm}'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('キャンセル'),
+            child: const Text(AppConstants.labelCancel),
           ),
           TextButton(
             onPressed: () async {
@@ -262,7 +263,7 @@ class _StaffManagementScreenState extends ConsumerState<StaffManagementScreen> {
               }
             },
             child: const Text(
-              '削除',
+              AppConstants.labelDelete,
               style: TextStyle(color: Colors.red),
             ),
           ),
@@ -299,7 +300,7 @@ class _StaffListItem extends StatelessWidget {
           staff.name,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        subtitle: Text('時給: ¥${staff.hourlyWage.toString().replaceAllMapped(
+        subtitle: Text('${AppConstants.labelHourlyWage}: ¥${staff.hourlyWage.toString().replaceAllMapped(
               RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
               (Match m) => '${m[1]},',
             )}'),
@@ -309,12 +310,12 @@ class _StaffListItem extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.edit_outlined),
               onPressed: onEdit,
-              tooltip: '編集',
+              tooltip: AppConstants.labelEdit,
             ),
             IconButton(
               icon: const Icon(Icons.delete_outline, color: Colors.red),
               onPressed: onDelete,
-              tooltip: '削除',
+              tooltip: AppConstants.labelDelete,
             ),
           ],
         ),
@@ -374,14 +375,14 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
         ref.invalidate(staffCountProvider);
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('スタッフ情報を更新しました')),
+          const SnackBar(content: Text(AppConstants.msgUpdateComplete)),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('エラー: $e'),
+            content: Text('${AppConstants.errMsgGeneric}: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -396,7 +397,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('スタッフ編集'),
+      title: const Text(AppConstants.labelEditStaff),
       content: Form(
         key: _formKey,
         child: Column(
@@ -405,13 +406,13 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
             TextFormField(
               controller: _nameController,
               decoration: const InputDecoration(
-                labelText: '名前',
+                labelText: AppConstants.labelName,
                 prefixIcon: Icon(Icons.person),
                 border: OutlineInputBorder(),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return '名前を入力してください';
+                  return AppConstants.valInputName;
                 }
                 return null;
               },
@@ -420,18 +421,18 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
             TextFormField(
               controller: _wageController,
               decoration: const InputDecoration(
-                labelText: '時給',
+                labelText: AppConstants.labelHourlyWage,
                 prefixIcon: Icon(Icons.attach_money),
-                suffixText: '円',
+                suffixText: AppConstants.labelYen,
                 border: OutlineInputBorder(),
               ),
               keyboardType: TextInputType.number,
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return '時給を入力してください';
+                  return AppConstants.valInputWage;
                 }
                 if (int.tryParse(value) == null) {
-                  return '数値を入力してください';
+                  return AppConstants.valInputNumber;
                 }
                 return null;
               },
@@ -442,7 +443,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
       actions: [
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-          child: const Text('キャンセル'),
+          child: const Text(AppConstants.labelCancel),
         ),
         ElevatedButton(
           onPressed: _isLoading ? null : _handleSave,
@@ -459,7 +460,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                     color: Colors.white,
                   ),
                 )
-              : const Text('更新'),
+              : const Text(AppConstants.labelUpdate),
         ),
       ],
     );

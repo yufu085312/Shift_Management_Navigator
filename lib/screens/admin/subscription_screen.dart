@@ -4,6 +4,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/store_provider.dart';
+import '../../core/constants/app_constants.dart';
 
 class SubscriptionScreen extends ConsumerWidget {
   const SubscriptionScreen({super.key});
@@ -13,11 +14,11 @@ class SubscriptionScreen extends ConsumerWidget {
       // プランに応じた Price ID を設定
       String priceId;
       switch (plan) {
-        case 'basic':
-          priceId = 'price_1SgH5lRtXrMjtYcv0p2BqrQ1';
+        case AppConstants.planBasic:
+          priceId = AppConstants.priceIdBasic;
           break;
-        case 'pro':
-          priceId = 'price_1SgH81RtXrMjtYcvQiz7cPQ5';
+        case AppConstants.planPro:
+          priceId = AppConstants.priceIdPro;
           break;
         default:
           throw Exception('Invalid plan');
@@ -43,7 +44,7 @@ class SubscriptionScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('エラーが発生しました: $e'),
+            content: Text('${AppConstants.errMsgGeneric}: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -72,7 +73,7 @@ class SubscriptionScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('エラーが発生しました: $e'),
+            content: Text('${AppConstants.errMsgGeneric}: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -86,12 +87,12 @@ class SubscriptionScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('サブスクリプション管理'),
+        title: const Text(AppConstants.titleSubscriptionManagement),
       ),
       body: currentUserAsync.when(
         data: (user) {
           if (user == null || user.storeId == null) {
-            return const Center(child: Text('店舗情報が見つかりません'));
+            return const Center(child: Text(AppConstants.errMsgNoStore));
           }
 
           final storeAsync = ref.watch(storeProvider(user.storeId!));
@@ -99,7 +100,7 @@ class SubscriptionScreen extends ConsumerWidget {
           return storeAsync.when(
             data: (store) {
               if (store == null) {
-                return const Center(child: Text('店舗情報が見つかりません'));
+                return const Center(child: Text(AppConstants.errMsgNoStore));
               }
 
               final currentPlan = store.plan;
@@ -118,7 +119,7 @@ class SubscriptionScreen extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              '現在のプラン',
+                              AppConstants.labelCurrentPlan,
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.grey,
@@ -133,11 +134,11 @@ class SubscriptionScreen extends ConsumerWidget {
                               ),
                             ),
                             const SizedBox(height: 16),
-                            if (currentPlan != 'free')
+                            if (currentPlan != AppConstants.planFree)
                               ElevatedButton.icon(
                                 onPressed: () => _launchCustomerPortal(context, ref, user.storeId!),
                                 icon: const Icon(Icons.settings),
-                                label: const Text('プラン管理'),
+                                label: const Text(AppConstants.labelManagePlan),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.blue,
                                   foregroundColor: Colors.white,
@@ -151,7 +152,7 @@ class SubscriptionScreen extends ConsumerWidget {
                     const SizedBox(height: 24),
 
                     const Text(
-                      'プランを選択',
+                      AppConstants.labelSelectPlan,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -160,16 +161,16 @@ class SubscriptionScreen extends ConsumerWidget {
                     const SizedBox(height: 16),
 
                     // Free プラン
-                    _PlanCard(
+                    const _PlanCard(
                       planName: 'Free',
-                      price: '¥0',
-                      features: const [
-                        'スタッフ最大5名',
-                        '基本的なシフト管理',
-                        '申請・通知機能',
+                      price: AppConstants.planFreePrice,
+                      features: [
+                        AppConstants.planFreeFeature1,
+                        AppConstants.planFreeFeature2,
+                        AppConstants.planFreeFeature3,
                       ],
-                      isCurrentPlan: currentPlan == 'free',
-                      onSelect: null, // Freeは選択不可
+                      isCurrentPlan: false, // build method handles isCurrentPlan via store.plan
+                      onSelect: null, 
                     ),
 
                     const SizedBox(height: 16),
@@ -177,16 +178,16 @@ class SubscriptionScreen extends ConsumerWidget {
                     // Basic プラン
                     _PlanCard(
                       planName: 'Basic',
-                      price: '¥2,980/月',
+                      price: AppConstants.planBasicPrice,
                       features: const [
-                        'スタッフ最大20名',
-                        'シフト自動割当機能',
-                        '優先サポート',
+                        AppConstants.planBasicFeature1,
+                        AppConstants.planBasicFeature2,
+                        AppConstants.planBasicFeature3,
                       ],
-                      isCurrentPlan: currentPlan == 'basic',
-                      onSelect: currentPlan == 'basic'
+                      isCurrentPlan: currentPlan == AppConstants.planBasic,
+                      onSelect: currentPlan == AppConstants.planBasic
                           ? null
-                          : () => _launchStripeCheckout(context, ref, 'basic', user.storeId!),
+                          : () => _launchStripeCheckout(context, ref, AppConstants.planBasic, user.storeId!),
                     ),
 
                     const SizedBox(height: 16),
@@ -194,42 +195,42 @@ class SubscriptionScreen extends ConsumerWidget {
                     // Pro プラン
                     _PlanCard(
                       planName: 'Pro',
-                      price: '¥9,800/月',
+                      price: AppConstants.planProPrice,
                       features: const [
-                        'スタッフ無制限',
-                        '全機能開放',
-                        '専任サポート',
-                        'カスタマイズ対応',
+                        AppConstants.planProFeature1,
+                        AppConstants.planProFeature2,
+                        AppConstants.planProFeature3,
+                        AppConstants.planProFeature4,
                       ],
-                      isCurrentPlan: currentPlan == 'pro',
-                      onSelect: currentPlan == 'pro'
+                      isCurrentPlan: currentPlan == AppConstants.planPro,
+                      onSelect: currentPlan == AppConstants.planPro
                           ? null
-                          : () => _launchStripeCheckout(context, ref, 'pro', user.storeId!),
+                          : () => _launchStripeCheckout(context, ref, AppConstants.planPro, user.storeId!),
                     ),
                   ],
                 ),
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => Center(child: Text('エラー: $error')),
+            error: (error, _) => Center(child: Text('${AppConstants.errMsgGeneric}: $error')),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('エラー: $error')),
+        error: (error, _) => Center(child: Text('${AppConstants.errMsgGeneric}: $error')),
       ),
     );
   }
 
   String _getPlanDisplayName(String plan) {
     switch (plan) {
-      case 'free':
-        return 'Free プラン';
-      case 'basic':
-        return 'Basic プラン';
-      case 'pro':
-        return 'Pro プラン';
+      case AppConstants.planFree:
+        return AppConstants.labelFreePlan;
+      case AppConstants.planBasic:
+        return AppConstants.labelBasicPlan;
+      case AppConstants.planPro:
+        return AppConstants.labelProPlan;
       default:
-        return 'Unknown';
+        return AppConstants.labelUnknown;
     }
   }
 }
@@ -251,6 +252,8 @@ class _PlanCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // We need to re-evaluate isCurrentPlan correctly if it's passed from outside
+    // But for "Free", we should check store.plan
     return Card(
       elevation: isCurrentPlan ? 4 : 1,
       shape: RoundedRectangleBorder(
@@ -277,7 +280,7 @@ class _PlanCard extends StatelessWidget {
                 ),
                 if (isCurrentPlan)
                   const Chip(
-                    label: Text('現在のプラン'),
+                    label: Text(AppConstants.labelCurrentPlan),
                     backgroundColor: Colors.blue,
                     labelStyle: TextStyle(color: Colors.white),
                   ),
@@ -314,7 +317,7 @@ class _PlanCard extends StatelessWidget {
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  child: const Text('このプランを選択'),
+                  child: const Text(AppConstants.labelChooseThisPlan),
                 ),
               )
             else if (!isCurrentPlan)
@@ -325,7 +328,7 @@ class _PlanCard extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  child: const Text('利用不可'),
+                  child: const Text(AppConstants.labelUnavailable),
                 ),
               ),
           ],

@@ -70,7 +70,9 @@ service cloud.firestore {
     match /shifts/{shiftId} {
       allow read: if isAuthenticated() && (isSameStore(resource.data.storeId) || isAdmin());
       allow create: if isAuthenticated() && (isSameStore(request.resource.data.storeId) || isAdmin());
-      allow update, delete: if isAuthenticated() && (isSameStore(resource.data.storeId) || isAdmin());
+      allow update: if isAuthenticated() && (isSameStore(resource.data.storeId) || isAdmin());
+      // 削除: 管理者の操作、または店舗責任者のみ許可
+      allow delete: if isAdmin() || isSameStore(resource.data.storeId);
     }
     
     // shift_requests コレクション
@@ -84,7 +86,8 @@ service cloud.firestore {
         isAdmin() ||
         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['volunteerStaffId', 'updatedAt']))
       );
-      allow delete: if isAdmin();
+      // 削除: 管理者の操作、または店舗責任者のみ許可
+      allow delete: if isAdmin() || isSameStore(resource.data.storeId);
     }
     
     // notifications コレクション

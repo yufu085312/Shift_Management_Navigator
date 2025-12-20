@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
+import 'package:table_calendar/table_calendar.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/staff_provider.dart';
 import '../../providers/shift_provider.dart';
-import '../../models/staff_model.dart';
+import '../../models/shift_model.dart';
 import 'wish_submission_screen.dart';
 import 'change_request_screen.dart';
 import 'notifications_screen.dart';
 import 'substitute_recruitment_screen.dart';
+import '../../providers/shift_request_provider.dart';
+import '../../core/constants/app_constants.dart';
 
 class MyShiftScreen extends ConsumerStatefulWidget {
   const MyShiftScreen({super.key});
@@ -23,40 +25,85 @@ class _MyShiftScreenState extends ConsumerState<MyShiftScreen> {
   DateTime? _selectedDay;
   CalendarFormat _calendarFormat = CalendarFormat.month;
 
+  void _confirmLeaveStore(BuildContext context) {
+    final staff = ref.read(currentStaffProvider).value;
+    if (staff == null) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(AppConstants.diagLeaveStoreTitle),
+        content: const Text(AppConstants.diagLeaveStoreConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(AppConstants.labelCancel),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              
+              // ScaffoldMessengerを先に取得（invalidate後はcontextが無効になるため）
+              final messenger = ScaffoldMessenger.of(context);
+              
+              try {
+                final staffRepository = ref.read(staffRepositoryProvider);
+                final authRepository = ref.read(authRepositoryProvider);
+                final user = ref.read(currentUserProvider).value;
+
+                if (user == null || user.storeId == null) return;
+
+                final storeIdForMessage = user.storeId!;
+
+                // 重要: ユーザー情報の storeId を更新する前に、シフトと申請を削除
+                // （isSameStore() が正しく評価されるため）
+                await staffRepository.leaveStore(
+                  userId: user.uid,
+                  storeId: user.storeId!,
+                );
+
+                // ユーザー情報のstoreIdをnullにする
+                await authRepository.updateUserData(
+                  uid: user.uid,
+                  clearStoreId: true,
+                );
+
+                // プロバイダーを無効化（これにより画面が再構築される）
+                ref.invalidate(currentUserProvider);
+                ref.invalidate(currentStaffProvider);
+
+                // 成功メッセージを表示
+                messenger.showSnackBar(
+                  SnackBar(content: Text('$storeIdForMessage${AppConstants.msgLeaveSuccess}')),
+                );
+              } catch (e) {
+                // エラーメッセージを表示
+                messenger.showSnackBar(
+                  SnackBar(content: Text('${AppConstants.errMsgGeneric}: $e'), backgroundColor: Colors.red),
+                );
+              }
+            },
+            child: const Text(AppConstants.labelLeaveStore, style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final staffAsync = ref.watch(currentStaffProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('マイシフト'),
+        title: const Text(AppConstants.titleMyShift),
         actions: [
           IconButton(
-            icon: const Icon(Icons.group_add),
-            tooltip: '代打募集一覧',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SubstituteRecruitmentScreen()),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              ref.invalidate(staffShiftsProvider);
-              ref.invalidate(currentStaffProvider);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('情報を更新しました')),
-              );
-            },
-          ),
-          IconButton(
             icon: const Icon(Icons.notifications),
+            tooltip: AppConstants.titleNotifications,
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const NotificationsScreen()),
               );
             },
           ),
@@ -69,25 +116,6 @@ class _MyShiftScreenState extends ConsumerState<MyShiftScreen> {
           ),
         ],
       ),
-      body: staffAsync.when(
-        data: (staff) {
-          if (staff == null) {
-            return const Center(child: Text('スタッフ情報が見つかりません'));
-          }
-
-          return Column(
-            children: [
-              _buildCalendar(),
-              const Divider(height: 1),
-              Expanded(
-                child: _buildShiftInfo(staff),
-              ),
-            ],
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('エラー: $error')),
-      ),
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -95,145 +123,214 @@ class _MyShiftScreenState extends ConsumerState<MyShiftScreen> {
             const DrawerHeader(
               decoration: BoxDecoration(color: Colors.blue),
               child: Text(
-                'メニュー',
+                AppConstants.labelMenu,
                 style: TextStyle(color: Colors.white, fontSize: 24),
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.calendar_today),
-              title: const Text('マイシフト'),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.edit_calendar),
-              title: const Text('シフト希望提出'),
+              leading: const Icon(Icons.group),
+              title: const Text(AppConstants.labelSubstituteRecruitment),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const WishSubmissionScreen()),
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const SubstituteRecruitmentScreen()),
                 );
               },
             ),
+            const Divider(),
             ListTile(
-              leading: const Icon(Icons.swap_horiz),
-              title: const Text('変更・代打申請'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ChangeRequestScreen()),
-                );
-              },
+              leading: const Icon(Icons.exit_to_app, color: Colors.red),
+              title: const Text(AppConstants.labelLeaveStore, style: TextStyle(color: Colors.red)),
+              onTap: () => _confirmLeaveStore(context),
             ),
           ],
         ),
       ),
-    );
-  }
+      body: staffAsync.when(
+        data: (staff) {
+          if (staff == null) return const Center(child: Text(AppConstants.labelStaffNotFound));
 
-  Widget _buildCalendar() {
-    return Card(
-      margin: const EdgeInsets.all(8),
-      child: TableCalendar(
-        firstDay: DateTime.now().subtract(const Duration(days: 365)),
-        lastDay: DateTime.now().add(const Duration(days: 365)),
-        focusedDay: _focusedDay,
-        calendarFormat: _calendarFormat,
-        selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-        onDaySelected: (selectedDay, focusedDay) {
-          setState(() {
-            _selectedDay = selectedDay;
-            _focusedDay = focusedDay;
-          });
+          final shiftsAsync = ref.watch(staffShiftsProvider(StaffShiftQueryParams(
+            staffId: staff.id,
+            storeId: staff.storeId,
+            startDate: DateFormat('yyyy-MM-dd').format(_focusedDay.subtract(const Duration(days: 42))),
+            endDate: DateFormat('yyyy-MM-dd').format(_focusedDay.add(const Duration(days: 42))),
+          )));
+
+          final requestsAsync = ref.watch(staffRequestsProvider(StaffRequestQueryParams(
+            staffId: staff.id,
+            storeId: staff.storeId,
+          )));
+
+          return shiftsAsync.when(
+            data: (shifts) => requestsAsync.when(
+              data: (requests) {
+                // 申請中の希望のみを抽出（pendingかつwish）
+                final pendingWishes = requests.where((r) => 
+                  r.status == AppConstants.requestStatusPending && 
+                  r.type == AppConstants.requestTypeWish
+                ).toList();
+
+                return Column(
+                  children: [
+                    TableCalendar(
+                      firstDay: DateTime.now().subtract(const Duration(days: 365)),
+                      lastDay: DateTime.now().add(const Duration(days: 365)),
+                      focusedDay: _focusedDay,
+                      calendarFormat: _calendarFormat,
+                      selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                      onDaySelected: (selectedDay, focusedDay) {
+                        setState(() {
+                          _selectedDay = selectedDay;
+                          _focusedDay = focusedDay;
+                        });
+                      },
+                      onFormatChanged: (format) {
+                        setState(() => _calendarFormat = format);
+                      },
+                      eventLoader: (day) {
+                        final dateStr = DateFormat('yyyy-MM-dd').format(day);
+                        final dayShifts = shifts.where((s) => s.date == dateStr).toList();
+                        final dayRequests = pendingWishes.where((r) => r.date == dateStr).toList();
+                        return [...dayShifts, ...dayRequests];
+                      },
+                      headerStyle: const HeaderStyle(titleCentered: true),
+                      calendarStyle: const CalendarStyle(
+                        todayDecoration: BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
+                        selectedDecoration: BoxDecoration(color: Colors.orange, shape: BoxShape.circle),
+                        markerDecoration: BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+                      ),
+                    ),
+                    const Divider(),
+                    if (_selectedDay != null)
+                      Expanded(
+                        child: Builder(
+                          builder: (context) {
+                            final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDay!);
+                            final dayShifts = shifts.where((s) => s.date == dateStr).toList();
+                            final dayRequests = pendingWishes.where((r) => r.date == dateStr).toList();
+                            
+                            if (dayShifts.isEmpty && dayRequests.isEmpty) {
+                              return const Center(child: Text(AppConstants.labelShiftNoShifts));
+                            }
+
+                            return ListView(
+                              children: [
+                                ...dayShifts.map((shift) => _ShiftRequestItem(shift: shift)),
+                                ...dayRequests.map((request) => _PendingWishItem(request: request)),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                  ],
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, _) => Center(child: Text('${AppConstants.errMsgGeneric}: $error')),
+            ),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) => Center(child: Text('${AppConstants.errMsgGeneric}: $error')),
+          );
         },
-        onFormatChanged: (format) {
-          setState(() {
-            _calendarFormat = format;
-          });
-        },
-        onPageChanged: (focusedDay) {
-          _focusedDay = focusedDay;
-        },
-        headerStyle: const HeaderStyle(
-          formatButtonVisible: true,
-          titleCentered: true,
-        ),
-        calendarStyle: const CalendarStyle(
-          todayDecoration: BoxDecoration(
-            color: Colors.blueGrey,
-            shape: BoxShape.circle,
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(child: Text('${AppConstants.errMsgGeneric}: $error')),
+      ),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton(
+            heroTag: 'wish',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const WishSubmissionScreen()),
+              );
+            },
+            tooltip: AppConstants.titleWishSubmission,
+            child: const Icon(Icons.add),
           ),
-          selectedDecoration: BoxDecoration(
-            color: Colors.blue,
-            shape: BoxShape.circle,
+          const SizedBox(height: 16),
+          FloatingActionButton(
+            heroTag: 'change',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const ChangeRequestScreen()),
+              );
+            },
+            tooltip: AppConstants.titleChangeRequest,
+            child: const Icon(Icons.edit),
           ),
-        ),
+        ],
       ),
     );
   }
+}
 
-  Widget _buildShiftInfo(StaffModel staff) {
-    if (_selectedDay == null) {
-      return const Center(child: Text('日付を選択してください'));
-    }
+class _ShiftRequestItem extends StatelessWidget {
+  final ShiftModel shift;
 
-    final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDay!);
-    final shiftsAsync = ref.watch(staffShiftsProvider(StaffShiftQueryParams(
-      staffId: staff.id,
-      storeId: staff.storeId,
-      startDate: dateStr,
-      endDate: dateStr,
-    )));
+  const _ShiftRequestItem({required this.shift});
 
-    return shiftsAsync.when(
-      data: (allShifts) {
-        if (allShifts.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.event_available, size: 64, color: Colors.grey.shade400),
-                const SizedBox(height: 16),
-                const Text('この日のシフトはありません'),
-              ],
-            ),
-          );
-        }
+  @override
+  Widget build(BuildContext context) {
+    final bool isDraft = shift.status == AppConstants.shiftStatusDraft;
 
-        return ListView.builder(
-          itemCount: allShifts.length,
-          itemBuilder: (context, index) {
-            final shift = allShifts[index];
-            final isDraft = shift.status == 'draft';
-            final isUnderRequest = shift.requestStatus != null;
-            
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ListTile(
-                leading: Icon(
-                  Icons.access_time, 
-                  color: isUnderRequest ? Colors.purple : (isDraft ? Colors.orange : Colors.blue)
-                ),
-                title: Text(
-                  '勤務時間${isDraft ? ' (公開待ち)' : (isUnderRequest ? ' (申請中)' : '')}',
-                  style: (isDraft || isUnderRequest) ? TextStyle(
-                    color: isUnderRequest ? Colors.purple : Colors.orange, 
-                    fontWeight: FontWeight.bold
-                  ) : null,
-                ),
-                subtitle: Text('${shift.startTime} - ${shift.endTime}'),
-                trailing: Icon(
-                  isDraft ? Icons.pending : (isUnderRequest ? Icons.sync : Icons.check_circle), 
-                  color: isDraft ? Colors.orange : (isUnderRequest ? Colors.purple : Colors.green)
-                ),
-              ),
-            );
-          },
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(child: Text('エラー: $error')),
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: isDraft ? Colors.grey.shade100 : Colors.blue.shade50,
+      child: ListTile(
+        title: Text(
+          isDraft ? AppConstants.labelShiftWaitingPublish : AppConstants.labelWorkingTime,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: isDraft ? Colors.grey : Colors.blue,
+          ),
+        ),
+        subtitle: Text(
+          '${shift.startTime} - ${shift.endTime}',
+          style: const TextStyle(fontSize: 18),
+        ),
+        trailing: shift.requestId != null
+            ? const Chip(
+                label: Text(AppConstants.labelShiftRequesting),
+                backgroundColor: Colors.orange,
+                labelStyle: TextStyle(color: Colors.white, fontSize: 12),
+              )
+            : null,
+      ),
+    );
+  }
+}
+class _PendingWishItem extends StatelessWidget {
+  final dynamic request; // ShiftRequestModel
+
+  const _PendingWishItem({required this.request});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: Colors.orange.shade50,
+      child: ListTile(
+        title: const Text(
+          AppConstants.labelShiftWish,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.orange,
+          ),
+        ),
+        subtitle: Text(
+          request.startTime != null && request.endTime != null
+              ? '${request.startTime} - ${request.endTime}'
+              : AppConstants.labelShiftWish,
+          style: const TextStyle(fontSize: 18),
+        ),
+        trailing: const Chip(
+          label: Text(AppConstants.labelShiftRequesting),
+          backgroundColor: Colors.orange,
+          labelStyle: TextStyle(color: Colors.white, fontSize: 12),
+        ),
+      ),
     );
   }
 }

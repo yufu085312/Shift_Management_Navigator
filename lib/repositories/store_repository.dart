@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/store_model.dart';
+import '../core/constants/app_constants.dart';
 
 class StoreRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -13,12 +14,12 @@ class StoreRepository {
     int? weekStart,
   }) async {
     final now = DateTime.now();
-    final docRef = _firestore.collection('stores').doc();
+    final docRef = _firestore.collection(AppConstants.collectionStores).doc();
 
     final storeData = {
       'name': name,
       'ownerId': ownerId,
-      'plan': 'free',
+      'plan': AppConstants.planFree,
       'businessHours': businessHours ?? {},
       'shiftUnitMinutes': shiftUnitMinutes ?? 30,
       'weekStart': weekStart ?? 0,
@@ -36,7 +37,7 @@ class StoreRepository {
   // 店舗情報を取得
   Future<StoreModel?> getStore(String storeId) async {
     try {
-      final doc = await _firestore.collection('stores').doc(storeId).get();
+      final doc = await _firestore.collection(AppConstants.collectionStores).doc(storeId).get();
       if (!doc.exists) return null;
       return StoreModel.fromFirestore(doc);
     } catch (e) {
@@ -61,7 +62,7 @@ class StoreRepository {
     if (weekStart != null) updates['weekStart'] = weekStart;
 
     if (updates.isNotEmpty) {
-      await _firestore.collection('stores').doc(storeId).update(updates);
+      await _firestore.collection(AppConstants.collectionStores).doc(storeId).update(updates);
     }
   }
 
@@ -69,7 +70,7 @@ class StoreRepository {
   Future<List<StoreModel>> getStoresByOwner(String ownerId) async {
     try {
       final querySnapshot = await _firestore
-          .collection('stores')
+          .collection(AppConstants.collectionStores)
           .where('ownerId', isEqualTo: ownerId)
           .get();
 

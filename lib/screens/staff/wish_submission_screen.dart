@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
+import 'package:table_calendar/table_calendar.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/staff_provider.dart';
 import '../../providers/shift_request_provider.dart';
+import '../../core/constants/app_constants.dart';
 
 class WishSubmissionScreen extends ConsumerStatefulWidget {
   const WishSubmissionScreen({super.key});
@@ -26,163 +28,126 @@ class _WishSubmissionScreenState extends ConsumerState<WishSubmissionScreen> {
     super.dispose();
   }
 
-  Future<void> _selectTime(BuildContext context, bool isStart) async {
-    final initialTime = isStart
-        ? (_startTime ?? const TimeOfDay(hour: 9, minute: 0))
-        : (_endTime ?? const TimeOfDay(hour: 18, minute: 0));
-
-    final time = await showTimePicker(
-      context: context,
-      initialTime: initialTime,
-    );
-
-    if (time != null) {
-      setState(() {
-        if (isStart) {
-          _startTime = time;
-        } else {
-          _endTime = time;
-        }
-      });
-    }
-  }
-
   Future<void> _submitWish() async {
     if (_selectedDay == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('日付を選択してください')),
+        const SnackBar(content: Text(AppConstants.valSelectDate)),
       );
       return;
     }
 
-    final staff = ref.read(currentStaffProvider).value;
-    if (staff == null) return;
-
     setState(() => _isLoading = true);
 
     try {
-      final repository = ref.read(shiftRequestRepositoryProvider);
-      final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDay!);
-      
-      String? startTimeStr;
-      String? endTimeStr;
-      if (_startTime != null && _endTime != null) {
-        startTimeStr = '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}';
-        endTimeStr = '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}';
-      }
+      final staff = ref.read(currentStaffProvider).value;
+      if (staff == null) throw Exception(AppConstants.labelStaffNotFound);
 
+      final repository = ref.read(shiftRequestRepositoryProvider);
+      
       await repository.createRequest(
-        storeId: staff.storeId,
         staffId: staff.id,
-        type: 'wish',
-        date: dateStr,
-        startTime: startTimeStr,
-        endTime: endTimeStr,
-        reason: _reasonController.text.isEmpty ? null : _reasonController.text,
+        storeId: staff.storeId,
+        date: DateFormat('yyyy-MM-dd').format(_selectedDay!),
+        type: AppConstants.requestTypeWish,
+        startTime: _startTime != null ? _formatTime(_startTime!) : null,
+        endTime: _endTime != null ? _formatTime(_endTime!) : null,
+        reason: _reasonController.text.trim(),
       );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('シフト希望を提出しました')),
+          const SnackBar(content: Text(AppConstants.msgRequestSubmitted)),
         );
         Navigator.pop(context);
-        ref.invalidate(staffRequestsProvider(staff.id));
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('エラー: $e')),
+          SnackBar(content: Text('${AppConstants.errMsgGeneric}: $e')),
         );
       }
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  String _formatTime(TimeOfDay time) {
+    final now = DateTime.now();
+    final dt = DateTime(now.year, now.month, now.day, time.hour, time.minute);
+    return DateFormat('HH:mm').format(dt);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('シフト希望提出')),
+      appBar: AppBar(title: const Text(AppConstants.titleWishSubmission)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '希望する日付を選択してください',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
+            const Text(AppConstants.valSelectDate, style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            Card(
-              child: TableCalendar(
-                firstDay: DateTime.now(),
-                lastDay: DateTime.now().add(const Duration(days: 90)),
-                focusedDay: _focusedDay,
-                selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                onDaySelected: (selectedDay, focusedDay) {
-                  setState(() {
-                    _selectedDay = selectedDay;
-                    _focusedDay = focusedDay;
-                  });
-                },
-                headerStyle: const HeaderStyle(
-                  formatButtonVisible: false,
-                  titleCentered: true,
-                ),
-                calendarStyle: const CalendarStyle(
-                  todayDecoration: BoxDecoration(
-                    color: Colors.blueGrey,
-                    shape: BoxShape.circle,
-                  ),
-                  selectedDecoration: BoxDecoration(
-                    color: Colors.blue,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
+            TableCalendar(
+              firstDay: DateTime.now(),
+              lastDay: DateTime.now().add(const Duration(days: 90)),
+              focusedDay: _focusedDay,
+              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+              onDaySelected: (selectedDay, focusedDay) {
+                setState(() {
+                  _selectedDay = selectedDay;
+                  _focusedDay = focusedDay;
+                });
+              },
+              calendarFormat: CalendarFormat.month,
+              availableCalendarFormats: const {CalendarFormat.month: 'Month'},
+              headerStyle: const HeaderStyle(titleCentered: true),
             ),
             const SizedBox(height: 24),
+            
             if (_selectedDay != null) ...[
               Text(
-                '選択日: ${DateFormat('yyyy年M月d日(E)', 'ja').format(_selectedDay!)}',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                '${AppConstants.labelSelectedDate}: ${DateFormat(AppConstants.labelDateFormatFull, 'ja').format(_selectedDay!)}',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue),
               ),
-              const SizedBox(height: 16),
-              const Text('希望時間(未指定の場合は終日)'),
+              const SizedBox(height: 24),
+              const Text(AppConstants.labelWishTimeHint, style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _selectTime(context, true),
-                      icon: const Icon(Icons.access_time),
-                      label: Text(_startTime?.format(context) ?? '開始時間'),
+                    child: OutlinedButton(
+                      onPressed: () async {
+                        final time = await showTimePicker(context: context, initialTime: const TimeOfDay(hour: 9, minute: 0));
+                        if (time != null) setState(() => _startTime = time);
+                      },
+                      child: Text(_startTime?.format(context) ?? AppConstants.labelTimeStart),
                     ),
                   ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8),
-                    child: Text('〜'),
-                  ),
+                  const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text('〜')),
                   Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _selectTime(context, false),
-                      icon: const Icon(Icons.access_time),
-                      label: Text(_endTime?.format(context) ?? '終了時間'),
+                    child: OutlinedButton(
+                      onPressed: () async {
+                        final time = await showTimePicker(context: context, initialTime: const TimeOfDay(hour: 18, minute: 0));
+                        if (time != null) setState(() => _endTime = time);
+                      },
+                      child: Text(_endTime?.format(context) ?? AppConstants.labelTimeEnd),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
+              const Text(AppConstants.labelReasonOptional, style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
               TextField(
                 controller: _reasonController,
                 decoration: const InputDecoration(
-                  labelText: '備考・理由 (任意)',
+                  hintText: AppConstants.labelReasonDefaultHint,
                   border: OutlineInputBorder(),
                 ),
-                maxLines: 3,
+                maxLines: 2,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -192,18 +157,10 @@ class _WishSubmissionScreenState extends ConsumerState<WishSubmissionScreen> {
                     backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
                   ),
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('提出する', style: TextStyle(fontSize: 18)),
+                  child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text(AppConstants.labelSubmit),
                 ),
               ),
-            ] else
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: Text('カレンダーから日付を選択してください'),
-                ),
-              ),
+            ],
           ],
         ),
       ),

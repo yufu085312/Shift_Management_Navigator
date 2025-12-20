@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../core/constants/app_constants.dart';
 
 part 'shift_request_model.freezed.dart';
 part 'shift_request_model.g.dart';
@@ -15,7 +16,7 @@ class ShiftRequestModel with _$ShiftRequestModel {
     String? startTime, // HH:mm (optional for wish)
     String? endTime, // HH:mm (optional for wish)
     String? reason,
-    @Default('pending') String status, // "pending", "approved", "rejected"
+    @Default(AppConstants.requestStatusPending) String status, // "pending", "approved", "rejected"
     String? targetShiftId, // 対象シフトID
     String? volunteerStaffId, // 代打志願スタッフID
     @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)

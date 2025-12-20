@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../core/constants/app_constants.dart';
 
 part 'store_model.freezed.dart';
 part 'store_model.g.dart';
@@ -10,7 +11,7 @@ class StoreModel with _$StoreModel {
     required String id,
     required String name,
     required String ownerId,
-    @Default('free') String plan, // "free", "basic", "pro"
+    @Default(AppConstants.planFree) String plan, // "free", "basic", "pro"
     @Default({}) Map<String, dynamic> businessHours,
     @Default(30) int shiftUnitMinutes,
     @Default(0) int weekStart, // 0 = Sunday

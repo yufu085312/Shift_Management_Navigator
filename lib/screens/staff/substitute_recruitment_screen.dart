@@ -5,6 +5,7 @@ import '../../providers/shift_provider.dart';
 import '../../providers/shift_request_provider.dart';
 import '../../models/shift_model.dart';
 import '../../services/notification_service.dart';
+import '../../core/constants/app_constants.dart';
 
 class SubstituteRecruitmentScreen extends ConsumerWidget {
   const SubstituteRecruitmentScreen({super.key});
@@ -16,11 +17,11 @@ class SubstituteRecruitmentScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('代打を引き受ける'),
-        content: Text('${shift.date} ${shift.startTime}-${shift.endTime} のシフトを引き受けますか？\n（管理者の承認後に確定します）'),
+        title: const Text(AppConstants.labelTakeSubstitute),
+        content: Text('${shift.date} ${shift.startTime}-${shift.endTime} ${AppConstants.msgSubstituteConfirm}'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('キャンセル')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('引き受ける')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text(AppConstants.labelCancel)),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text(AppConstants.labelAccept)),
         ],
       ),
     );
@@ -35,8 +36,8 @@ class SubstituteRecruitmentScreen extends ConsumerWidget {
         final notificationService = ref.read(notificationServiceProvider);
         await notificationService.notifyAdmins(
           storeId: staff.storeId,
-          title: '代打志願者あり',
-          body: '${staff.name}さんが${shift.date}の代打を志願しています。',
+          title: AppConstants.msgVolunteerExists,
+          body: '${staff.name}${AppConstants.msgVolunteerBodySuffix}',
         );
       } catch (notifyError) {
         // 通知失敗はログに出力せず静かに処理
@@ -44,14 +45,14 @@ class SubstituteRecruitmentScreen extends ConsumerWidget {
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('志願しました。管理者の承認をお待ちください。')),
+          const SnackBar(content: Text(AppConstants.msgVolunteerSuccess)),
         );
         ref.invalidate(recruitingSubstitutesProvider(staff.storeId));
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('志願処理でエラーが発生しました: $e')),
+          SnackBar(content: Text('${AppConstants.errMsgGeneric}: $e')),
         );
       }
     }
@@ -62,17 +63,17 @@ class SubstituteRecruitmentScreen extends ConsumerWidget {
     final staffAsync = ref.watch(currentStaffProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('代打募集一覧')),
+      appBar: AppBar(title: const Text(AppConstants.labelSubstituteRecruitment)),
       body: staffAsync.when(
         data: (staff) {
-          if (staff == null) return const Center(child: Text('スタッフ情報が見つかりません'));
+          if (staff == null) return const Center(child: Text(AppConstants.labelStaffNotFound));
 
           final recruitmentAsync = ref.watch(recruitingSubstitutesProvider(staff.storeId));
 
           return recruitmentAsync.when(
             data: (shifts) {
               if (shifts.isEmpty) {
-                return const Center(child: Text('現在募集中の代打はありません'));
+                return const Center(child: Text(AppConstants.msgNoSubstituteRecruitment));
               }
 
               return ListView.builder(
@@ -87,12 +88,12 @@ class SubstituteRecruitmentScreen extends ConsumerWidget {
                     margin: const EdgeInsets.only(bottom: 12),
                     child: ListTile(
                       title: Text('${shift.date} (${shift.startTime} - ${shift.endTime})'),
-                      subtitle: Text(isOwn ? '募集中の自分のシフト' : '代打を募集中です'),
+                      subtitle: Text(isOwn ? AppConstants.msgOwnRecruitment : AppConstants.msgRecruitingSubstitute),
                       trailing: isOwn
-                          ? const Text('自分の募集', style: TextStyle(color: Colors.grey))
+                          ? const Text(AppConstants.labelOwnRecruitment, style: TextStyle(color: Colors.grey))
                           : ElevatedButton(
                               onPressed: () => _volunteer(context, ref, shift),
-                              child: const Text('引き受ける'),
+                              child: const Text(AppConstants.labelAccept),
                             ),
                     ),
                   );
@@ -100,11 +101,11 @@ class SubstituteRecruitmentScreen extends ConsumerWidget {
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('エラー: $e')),
+            error: (e, _) => Center(child: Text('${AppConstants.errMsgGeneric}: $e')),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('エラー: $e')),
+        error: (e, _) => Center(child: Text('${AppConstants.errMsgGeneric}: $e')),
       ),
     );
   }

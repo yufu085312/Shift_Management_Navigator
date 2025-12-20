@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/shift_request_model.dart';
+import '../core/constants/app_constants.dart';
 
 class ShiftRequestRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -16,7 +17,7 @@ class ShiftRequestRepository {
     String? targetShiftId,
   }) async {
     final now = DateTime.now();
-    final docRef = _firestore.collection('shift_requests').doc();
+    final docRef = _firestore.collection(AppConstants.collectionShiftRequests).doc();
 
     final requestData = {
       'storeId': storeId,
@@ -26,7 +27,7 @@ class ShiftRequestRepository {
       'startTime': startTime,
       'endTime': endTime,
       'reason': reason,
-      'status': 'pending',
+      'status': AppConstants.requestStatusPending,
       'targetShiftId': targetShiftId,
       'createdAt': Timestamp.fromDate(now),
     };
@@ -35,9 +36,13 @@ class ShiftRequestRepository {
     final batch = _firestore.batch();
     batch.set(docRef, requestData);
 
-    if (targetShiftId != null && (type == 'change' || type == 'substitute')) {
-      batch.update(_firestore.collection('shifts').doc(targetShiftId), {
-        'requestStatus': 'pending_$type',
+    if (targetShiftId != null && (type == AppConstants.requestTypeChange || type == AppConstants.requestTypeSubstitute)) {
+      final internalStatus = type == AppConstants.requestTypeChange 
+          ? AppConstants.shiftRequestStatusPendingChange 
+          : AppConstants.shiftRequestStatusPendingSubstitute;
+
+      batch.update(_firestore.collection(AppConstants.collectionShifts).doc(targetShiftId), {
+        'requestStatus': internalStatus,
         'requestId': docRef.id,
         'updatedAt': Timestamp.fromDate(now),
       });
@@ -53,7 +58,7 @@ class ShiftRequestRepository {
 
   // 代打を志願する
   Future<void> volunteerForSubstitute(String requestId, String staffId) async {
-    await _firestore.collection('shift_requests').doc(requestId).update({
+    await _firestore.collection(AppConstants.collectionShiftRequests).doc(requestId).update({
       'volunteerStaffId': staffId,
       'updatedAt': Timestamp.fromDate(DateTime.now()),
     });
@@ -62,7 +67,7 @@ class ShiftRequestRepository {
   // 特定店舗の申請一覧を取得(管理者用)
   Future<List<ShiftRequestModel>> getRequestsByStore(String storeId) async {
     final querySnapshot = await _firestore
-        .collection('shift_requests')
+        .collection(AppConstants.collectionShiftRequests)
         .where('storeId', isEqualTo: storeId)
         .get();
 
@@ -87,7 +92,7 @@ class ShiftRequestRepository {
     required String endDate,
   }) async {
     final querySnapshot = await _firestore
-        .collection('shift_requests')
+        .collection(AppConstants.collectionShiftRequests)
         .where('storeId', isEqualTo: storeId)
         .get();
 
@@ -102,10 +107,11 @@ class ShiftRequestRepository {
   }
 
   // 特定スタッフの申請一覧を取得(スタッフ用)
-  Future<List<ShiftRequestModel>> getRequestsByStaff(String staffId) async {
+  Future<List<ShiftRequestModel>> getRequestsByStaff(String staffId, String storeId) async {
     final querySnapshot = await _firestore
-        .collection('shift_requests')
+        .collection(AppConstants.collectionShiftRequests)
         .where('staffId', isEqualTo: staffId)
+        .where('storeId', isEqualTo: storeId)
         .get();
 
     final requests = querySnapshot.docs
@@ -124,7 +130,7 @@ class ShiftRequestRepository {
 
   // 申請を更新(承認/却下など)
   Future<void> updateRequestStatus(String requestId, String status) async {
-    await _firestore.collection('shift_requests').doc(requestId).update({
+    await _firestore.collection(AppConstants.collectionShiftRequests).doc(requestId).update({
       'status': status,
       'processedAt': Timestamp.fromDate(DateTime.now()),
     });
@@ -132,6 +138,6 @@ class ShiftRequestRepository {
 
   // 申請を削除
   Future<void> deleteRequest(String requestId) async {
-    await _firestore.collection('shift_requests').doc(requestId).delete();
+    await _firestore.collection(AppConstants.collectionShiftRequests).doc(requestId).delete();
   }
 }

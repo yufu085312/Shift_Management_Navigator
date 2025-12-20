@@ -228,3 +228,97 @@ exports.stripeWebhook = onRequest(async (req, res) => {
 
   res.json({received: true});
 });
+
+/**
+ * スタッフが店舗から退出する際のクリーンアップ処理
+ *
+ * @param {Object} data - { userId: string, storeId: string }
+ * @param {Object} context - Firebase Auth コンテキスト
+ * @returns {Object} { success: boolean, deletedShifts: number, deletedRequests: number }
+ */
+exports.leaveStoreCleanup = onCall(async (request) => {
+  const { userId, storeId } = request.data;
+  const uid = request.auth?.uid;
+
+  // 認証チェック
+  if (!uid) {
+    throw new Error("認証が必要です");
+  }
+
+  // 自分自身のデータのみ削除可能
+  if (uid !== userId) {
+    throw new Error("他のユーザーのデータは削除できません");
+  }
+
+  if (!userId || !storeId) {
+    throw new Error("userId と storeId が必要です");
+  }
+
+  try {
+    const db = admin.firestore();
+    const nowStr = new Date().toISOString().split("T")[0];
+
+    // 1. スタッフIDを取得
+    const staffSnapshot = await db.collection("staffs")
+      .where("userId", "==", userId)
+      .where("storeId", "==", storeId)
+      .limit(1)
+      .get();
+
+    if (staffSnapshot.empty) {
+      throw new Error("スタッフデータが見つかりません");
+    }
+
+    const staffDoc = staffSnapshot.docs[0];
+    const staffId = staffDoc.id;
+
+    // 2. 未来のシフトを削除
+    const shiftsSnapshot = await db.collection("shifts")
+      .where("staffId", "==", staffId)
+      .get();
+
+    let deletedShiftsCount = 0;
+    const shiftDeletePromises = [];
+    shiftsSnapshot.forEach((doc) => {
+      const date = doc.data().date;
+      if (date >= nowStr) {
+        shiftDeletePromises.push(doc.ref.delete());
+        deletedShiftsCount++;
+      }
+    });
+    await Promise.all(shiftDeletePromises);
+
+    // 3. 全ての申請を削除
+    const requestsSnapshot = await db.collection("shift_requests")
+      .where("staffId", "==", staffId)
+      .get();
+
+    const requestDeletePromises = [];
+    requestsSnapshot.forEach((doc) => {
+      requestDeletePromises.push(doc.ref.delete());
+    });
+    await Promise.all(requestDeletePromises);
+
+    // 4. スタッフデータのisActiveをfalseにする
+    await staffDoc.ref.update({
+      isActive: false,
+    });
+
+    logger.info("Leave store cleanup completed", {
+      userId,
+      storeId,
+      staffId,
+      deletedShifts: deletedShiftsCount,
+      deletedRequests: requestsSnapshot.size,
+    });
+
+    return {
+      success: true,
+      deletedShifts: deletedShiftsCount,
+      deletedRequests: requestsSnapshot.size,
+    };
+  } catch (error) {
+    logger.error("Error in leave store cleanup", error);
+    throw new Error(`クリーンアップ処理に失敗しました: ${error.message}`);
+  }
+});

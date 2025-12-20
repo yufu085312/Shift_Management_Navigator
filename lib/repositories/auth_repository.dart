@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
+import '../core/constants/app_constants.dart';
 
 class AuthRepository {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -24,10 +25,10 @@ class AuthRepository {
       );
 
       final uid = userCredential.user!.uid;
-      final userDoc = await _firestore.collection('users').doc(uid).get();
+      final userDoc = await _firestore.collection(AppConstants.collectionUsers).doc(uid).get();
 
       if (!userDoc.exists) {
-        throw Exception('ユーザー情報が見つかりません');
+        throw Exception(AppConstants.errMsgUserNotFound);
       }
 
       return UserModel.fromFirestore(userDoc);
@@ -61,7 +62,7 @@ class AuthRepository {
       );
 
       // Firestoreにユーザー情報を保存
-      await _firestore.collection('users').doc(uid).set({
+      await _firestore.collection(AppConstants.collectionUsers).doc(uid).set({
         'name': name,
         'email': email,
         'role': role,
@@ -82,7 +83,7 @@ class AuthRepository {
   // ユーザー情報を取得
   Future<UserModel?> getUserData(String uid) async {
     try {
-      final userDoc = await _firestore.collection('users').doc(uid).get();
+      final userDoc = await _firestore.collection(AppConstants.collectionUsers).doc(uid).get();
       if (!userDoc.exists) return null;
       return UserModel.fromFirestore(userDoc);
     } catch (e) {
@@ -95,13 +96,18 @@ class AuthRepository {
     required String uid,
     String? name,
     String? storeId,
+    bool clearStoreId = false,
   }) async {
     final updates = <String, dynamic>{};
     if (name != null) updates['name'] = name;
-    if (storeId != null) updates['storeId'] = storeId;
+    if (clearStoreId) {
+      updates['storeId'] = null;
+    } else if (storeId != null) {
+      updates['storeId'] = storeId;
+    }
 
     if (updates.isNotEmpty) {
-      await _firestore.collection('users').doc(uid).update(updates);
+      await _firestore.collection(AppConstants.collectionUsers).doc(uid).update(updates);
     }
   }
 
@@ -109,7 +115,7 @@ class AuthRepository {
   Future<List<UserModel>> getUsersByStoreAndRole(String storeId, String role) async {
     // 複合インデックスを避けるため、店舗IDのみで引いてメモリ内でフィルタリング
     final querySnapshot = await _firestore
-        .collection('users')
+        .collection(AppConstants.collectionUsers)
         .where('storeId', isEqualTo: storeId)
         .get();
 
@@ -123,23 +129,22 @@ class AuthRepository {
   String _handleAuthException(FirebaseAuthException e) {
     switch (e.code) {
       case 'email-already-in-use':
-        return 'このメールアドレスは既に登録されています';
+        return AppConstants.errMsgEmailInUse;
       case 'invalid-email':
-        return '正しいメールアドレスを入力してください';
+        return AppConstants.valInvalidEmail;
       case 'weak-password':
-        return 'パスワードは8文字以上で入力してください';
+        return AppConstants.labelPasswordHelper;
       case 'user-not-found':
-        return 'メールアドレスまたはパスワードが正しくありません';
       case 'wrong-password':
-        return 'メールアドレスまたはパスワードが正しくありません';
+        return AppConstants.errMsgInvalidCred;
       case 'too-many-requests':
-        return 'ログイン試行回数が多すぎます。しばらくしてから再度お試しください';
+        return AppConstants.errMsgTooManyRequests;
       case 'user-disabled':
-        return 'このアカウントは無効化されています';
+        return AppConstants.errMsgUserDisabled;
       case 'operation-not-allowed':
-        return 'メール/パスワード認証が有効になっていません。Firebaseコンソールで有効にしてください。';
+        return AppConstants.errMsgOpNotAllowed;
       default:
-        return '認証エラーが発生しました: ${e.message}';
+        return '${AppConstants.errMsgAuth}: ${e.message}';
     }
   }
 }

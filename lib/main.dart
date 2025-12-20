@@ -4,11 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
+import 'providers/staff_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/admin/store_setup_screen.dart';
 import 'screens/admin/dashboard_screen.dart';
 import 'screens/staff/my_shift_screen.dart';
 import 'screens/staff/join_store_screen.dart';
+import 'core/constants/app_constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,7 +36,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'シフト管理ナビ',
+      title: AppConstants.labelAppName,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
@@ -69,7 +71,7 @@ class AuthWrapper extends ConsumerWidget {
       ),
       error: (error, stack) => Scaffold(
         body: Center(
-          child: Text('エラーが発生しました: $error'),
+          child: Text('${AppConstants.errMsgGeneric}: $error'),
         ),
       ),
     );
@@ -92,30 +94,35 @@ class HomePage extends ConsumerWidget {
         }
 
         // 管理者で店舗未設定の場合は店舗初期設定画面へ
-        if (user.role == 'admin' && user.storeId == null) {
+        if (user.role == AppConstants.roleAdmin && user.storeId == null) {
           return const StoreSetupScreen();
         }
 
         // 管理者で店舗設定済みの場合はダッシュボードへ
-        if (user.role == 'admin') {
+        if (user.role == AppConstants.roleAdmin) {
           return const AdminDashboardScreen();
         }
 
         // スタッフの場合は紐付け状態を確認
-        if (user.role == 'staff') {
+        if (user.role == AppConstants.roleStaff) {
           if (user.storeId == null) {
-            return const JoinStoreScreen();
+            // 自動同期を試みるために currentStaffProvider を監視
+            return ref.watch(currentStaffProvider).when(
+              data: (staff) => staff != null ? const MyShiftScreen() : const JoinStoreScreen(),
+              loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+              error: (_, __) => const JoinStoreScreen(),
+            );
           }
           return const MyShiftScreen();
         }
 
-        return const Center(child: Text('不明なロールです'));
+        return const Center(child: Text(AppConstants.errMsgUnknownRole));
       },
       loading: () => const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       ),
       error: (error, stack) => Scaffold(
-        body: Center(child: Text('エラー: $error')),
+        body: Center(child: Text('${AppConstants.errMsgLoad}: $error')),
       ),
     );
   }

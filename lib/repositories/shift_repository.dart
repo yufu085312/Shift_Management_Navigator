@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/shift_model.dart';
+import '../core/constants/app_constants.dart';
 
 class ShiftRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -11,10 +12,10 @@ class ShiftRepository {
     required String date,
     required String startTime,
     required String endTime,
-    String status = 'draft',
+    String status = AppConstants.shiftStatusDraft,
   }) async {
     final now = DateTime.now();
-    final docRef = _firestore.collection('shifts').doc();
+    final docRef = _firestore.collection(AppConstants.collectionShifts).doc();
 
     final shiftData = {
       'storeId': storeId,
@@ -38,7 +39,7 @@ class ShiftRepository {
   // シフトを取得
   Future<ShiftModel?> getShift(String shiftId) async {
     try {
-      final doc = await _firestore.collection('shifts').doc(shiftId).get();
+      final doc = await _firestore.collection(AppConstants.collectionShifts).doc(shiftId).get();
       if (!doc.exists) return null;
       return ShiftModel.fromFirestore(doc);
     } catch (e) {
@@ -54,7 +55,7 @@ class ShiftRepository {
   }) async {
     try {
       final querySnapshot = await _firestore
-          .collection('shifts')
+          .collection(AppConstants.collectionShifts)
           .where('storeId', isEqualTo: storeId)
           .get();
 
@@ -80,7 +81,7 @@ class ShiftRepository {
   }) async {
     try {
       final querySnapshot = await _firestore
-          .collection('shifts')
+          .collection(AppConstants.collectionShifts)
           .where('staffId', isEqualTo: staffId)
           .where('storeId', isEqualTo: storeId)
           .get();
@@ -126,12 +127,12 @@ class ShiftRepository {
       if (requestId != null) updates['requestId'] = requestId;
     }
 
-    await _firestore.collection('shifts').doc(shiftId).update(updates);
+    await _firestore.collection(AppConstants.collectionShifts).doc(shiftId).update(updates);
   }
 
   // シフトを削除
   Future<void> deleteShift(String shiftId) async {
-    await _firestore.collection('shifts').doc(shiftId).delete();
+    await _firestore.collection(AppConstants.collectionShifts).doc(shiftId).delete();
   }
 
   // シフトを公開(ステータスを確定に変更)
@@ -141,7 +142,7 @@ class ShiftRepository {
     required String endDate,
   }) async {
     final querySnapshot = await _firestore
-        .collection('shifts')
+        .collection(AppConstants.collectionShifts)
         .where('storeId', isEqualTo: storeId)
         .get();
 
@@ -156,9 +157,9 @@ class ShiftRepository {
       // 期間内かつ下書き状態のものを抽出
       if (date.compareTo(startDate) >= 0 && 
           date.compareTo(endDate) <= 0 && 
-          status == 'draft') {
+          status == AppConstants.shiftStatusDraft) {
         batch.update(doc.reference, {
-          'status': 'confirmed',
+          'status': AppConstants.shiftStatusConfirmed,
           'updatedAt': Timestamp.fromDate(DateTime.now()),
         });
         count++;
@@ -174,9 +175,9 @@ class ShiftRepository {
   Future<List<ShiftModel>> getRecruitingSubstitutes(String storeId) async {
     try {
       final querySnapshot = await _firestore
-          .collection('shifts')
+          .collection(AppConstants.collectionShifts)
           .where('storeId', isEqualTo: storeId)
-          .where('requestStatus', isEqualTo: 'pending_substitute')
+          .where('requestStatus', isEqualTo: AppConstants.shiftRequestStatusPendingSubstitute)
           .get();
 
       return querySnapshot.docs
