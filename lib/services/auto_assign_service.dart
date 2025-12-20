@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/shift_provider.dart';
 import '../providers/shift_request_provider.dart';
+import '../core/constants/app_constants.dart';
 
 final autoAssignServiceProvider = Provider((ref) => AutoAssignService(ref));
 
@@ -35,7 +36,7 @@ class AutoAssignService {
     int count = 0;
     // シンプルな実装: まだシフトが入っていない日付の希望を全てドラフトとして採用
     for (final wish in wishes) {
-      if (wish.type != 'wish') continue;
+      if (wish.type != AppConstants.requestTypeWish) continue;
 
       // 同日の同スタッフのシフトが既にあるかチェック
       final hasShift = existingShifts.any(
@@ -49,7 +50,7 @@ class AutoAssignService {
           date: wish.date,
           startTime: wish.startTime ?? '09:00',
           endTime: wish.endTime ?? '18:00',
-          status: 'draft',
+          status: AppConstants.shiftStatusDraft,
         );
         count++;
       }

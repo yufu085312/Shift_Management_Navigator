@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/store_provider.dart';
 import '../admin/staff_management_screen.dart';
+import '../../core/constants/app_constants.dart';
 
 class StoreSetupScreen extends ConsumerStatefulWidget {
   const StoreSetupScreen({super.key});
@@ -33,7 +34,7 @@ class _StoreSetupScreenState extends ConsumerState<StoreSetupScreen> {
       final currentUser = authRepository.currentUser;
 
       if (currentUser == null) {
-        throw Exception('ログインしてください');
+        throw Exception(AppConstants.errMsgRelogin);
       }
 
       // 店舗を作成
@@ -60,7 +61,7 @@ class _StoreSetupScreenState extends ConsumerState<StoreSetupScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('エラーが発生しました: $e'),
+            content: Text('${AppConstants.errMsgGeneric}: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -76,7 +77,7 @@ class _StoreSetupScreenState extends ConsumerState<StoreSetupScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('店舗初期設定'),
+        title: const Text(AppConstants.titleStoreSetup),
         automaticallyImplyLeading: false,
       ),
       body: SafeArea(
@@ -99,7 +100,7 @@ class _StoreSetupScreenState extends ConsumerState<StoreSetupScreen> {
 
                   // タイトル
                   const Text(
-                    '店舗情報を登録',
+                    AppConstants.labelRegisterStoreInfo,
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -108,7 +109,7 @@ class _StoreSetupScreenState extends ConsumerState<StoreSetupScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'シフト管理を始めるために、店舗情報を入力してください',
+                    AppConstants.msgInputStoreInfo,
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey,
@@ -121,14 +122,14 @@ class _StoreSetupScreenState extends ConsumerState<StoreSetupScreen> {
                   TextFormField(
                     controller: _storeNameController,
                     decoration: const InputDecoration(
-                      labelText: '店舗名',
-                      hintText: '例: カフェ○○ 渋谷店',
+                      labelText: AppConstants.labelStoreName,
+                      hintText: AppConstants.labelStoreNameHint,
                       prefixIcon: Icon(Icons.business),
                       border: OutlineInputBorder(),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return '店舗名を入力してください';
+                        return AppConstants.valInputStoreName;
                       }
                       return null;
                     },
@@ -153,7 +154,7 @@ class _StoreSetupScreenState extends ConsumerState<StoreSetupScreen> {
                             ),
                           )
                         : const Text(
-                            '店舗を作成',
+                            AppConstants.labelCreateStore,
                             style: TextStyle(fontSize: 16),
                           ),
                   ),
@@ -166,15 +167,15 @@ class _StoreSetupScreenState extends ConsumerState<StoreSetupScreen> {
                       color: Colors.blue.shade50,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Column(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
+                        const Row(
                           children: [
                             Icon(Icons.info_outline, size: 20, color: Colors.blue),
                             SizedBox(width: 8),
                             Text(
-                              'Freeプラン',
+                              AppConstants.labelFreePlan,
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.blue,
@@ -182,13 +183,10 @@ class _StoreSetupScreenState extends ConsumerState<StoreSetupScreen> {
                             ),
                           ],
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         Text(
-                          '• スタッフ数: 最大5人\n'
-                          '• シフト作成: ◯\n'
-                          '• 希望・変更申請: ◯\n'
-                          '• 自動割当: ✕',
-                          style: TextStyle(fontSize: 12),
+                          AppConstants.msgFreePlanNotice,
+                          style: const TextStyle(fontSize: 12),
                         ),
                       ],
                     ),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/staff_provider.dart';
 import '../../providers/store_provider.dart';
+import '../../core/constants/app_constants.dart';
 
 class JoinStoreScreen extends ConsumerStatefulWidget {
   const JoinStoreScreen({super.key});
@@ -34,12 +35,12 @@ class _JoinStoreScreenState extends ConsumerState<JoinStoreScreen> {
       final authRepository = ref.read(authRepositoryProvider);
       final currentUser = ref.read(currentUserProvider).value;
 
-      if (currentUser == null) throw Exception('再ログインしてください');
+      if (currentUser == null) throw Exception(AppConstants.errMsgRelogin);
 
       // 店舗の存在確認
       final store = await storeRepository.getStore(storeId);
       if (store == null) {
-        throw Exception('指定された店舗IDが見つかりません。管理者に確認してください。');
+        throw Exception(AppConstants.errMsgStoreNotFound);
       }
 
       // スタッフデータの紐付け/作成
@@ -59,7 +60,7 @@ class _JoinStoreScreenState extends ConsumerState<JoinStoreScreen> {
         // プロバイダーを無効化して最新データを取得
         ref.invalidate(currentUserProvider);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${store.name} に参加しました！')),
+          SnackBar(content: Text('${store.name} ${AppConstants.msgJoinSuccess}')),
         );
       }
     } catch (e) {
@@ -82,7 +83,7 @@ class _JoinStoreScreenState extends ConsumerState<JoinStoreScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('店舗への参加'),
+        title: const Text(AppConstants.titleStoreJoin),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -106,13 +107,13 @@ class _JoinStoreScreenState extends ConsumerState<JoinStoreScreen> {
                 ),
                 const SizedBox(height: 24),
                 const Text(
-                  '店舗に参加する',
+                  AppConstants.labelJoinStore,
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  '管理者に教えてもらった「店舗ID」を入力してください。',
+                  AppConstants.msgStoreIdConfirm,
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey),
                 ),
@@ -120,14 +121,14 @@ class _JoinStoreScreenState extends ConsumerState<JoinStoreScreen> {
                 TextFormField(
                   controller: _storeIdController,
                   decoration: const InputDecoration(
-                    labelText: '店舗ID',
-                    hintText: '例: abc123def456',
+                    labelText: AppConstants.labelStoreId,
+                    hintText: AppConstants.labelStoreIdHint,
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.key),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return '店舗IDを入力してください';
+                      return AppConstants.valInputStoreId;
                     }
                     return null;
                   },
@@ -141,7 +142,7 @@ class _JoinStoreScreenState extends ConsumerState<JoinStoreScreen> {
                   child: _isLoading
                       ? const CircularProgressIndicator()
                       : const Text(
-                          '参加する',
+                          AppConstants.labelJoin,
                           style: TextStyle(fontSize: 16),
                         ),
                 ),

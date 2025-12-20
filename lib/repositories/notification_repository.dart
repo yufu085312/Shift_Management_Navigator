@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/notification_model.dart';
+import '../core/constants/app_constants.dart';
 
 class NotificationRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -10,7 +11,7 @@ class NotificationRepository {
     required String title,
     required String body,
   }) async {
-    await _firestore.collection('notifications').add({
+    await _firestore.collection(AppConstants.collectionNotifications).add({
       'userId': userId,
       'title': title,
       'body': body,
@@ -22,7 +23,7 @@ class NotificationRepository {
   // 通知を取得
   Future<List<NotificationModel>> getNotifications(String userId) async {
     final querySnapshot = await _firestore
-        .collection('notifications')
+        .collection(AppConstants.collectionNotifications)
         .where('userId', isEqualTo: userId)
         .get();
 
@@ -42,7 +43,7 @@ class NotificationRepository {
 
   // 通知を既読にする
   Future<void> markAsRead(String notificationId) async {
-    await _firestore.collection('notifications').doc(notificationId).update({
+    await _firestore.collection(AppConstants.collectionNotifications).doc(notificationId).update({
       'isRead': true,
     });
   }
@@ -50,7 +51,7 @@ class NotificationRepository {
   // すべての通知を既読にする
   Future<void> markAllAsRead(String userId) async {
     final querySnapshot = await _firestore
-        .collection('notifications')
+        .collection(AppConstants.collectionNotifications)
         .where('userId', isEqualTo: userId)
         .where('isRead', isEqualTo: false)
         .get();

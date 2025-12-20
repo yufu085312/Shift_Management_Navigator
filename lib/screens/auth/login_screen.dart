@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
 import 'signup_screen.dart';
+import '../../core/constants/app_constants.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -76,7 +77,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    'シフト管理ナビ',
+                    AppConstants.labelAppName,
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -85,7 +86,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'ログイン',
+                    AppConstants.labelLogin,
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.grey,
@@ -99,16 +100,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(
-                      labelText: 'メールアドレス',
+                      labelText: AppConstants.labelEmail,
                       prefixIcon: Icon(Icons.email),
                       border: OutlineInputBorder(),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'メールアドレスを入力してください';
+                        return AppConstants.valInputEmail;
                       }
                       if (!value.contains('@')) {
-                        return '正しいメールアドレスを入力してください';
+                        return AppConstants.valInvalidEmail;
                       }
                       return null;
                     },
@@ -120,7 +121,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(
-                      labelText: 'パスワード',
+                      labelText: AppConstants.labelPassword,
                       prefixIcon: const Icon(Icons.lock),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -138,7 +139,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'パスワードを入力してください';
+                        return AppConstants.valInputPassword;
                       }
                       return null;
                     },
@@ -163,7 +164,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                           )
                         : const Text(
-                            'ログイン',
+                            AppConstants.labelLogin,
                             style: TextStyle(fontSize: 16),
                           ),
                   ),
@@ -178,7 +179,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       );
                     },
-                    child: const Text('アカウントをお持ちでない方はこちら'),
+                    child: const Text(AppConstants.labelNoAccount),
                   ),
                 ],
               ),

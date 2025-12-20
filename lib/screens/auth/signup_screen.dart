@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
+import '../../core/constants/app_constants.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -18,7 +19,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  String _selectedRole = 'admin'; // デフォルトは管理者
+  String _selectedRole = AppConstants.roleAdmin; // デフォルトは管理者
 
   @override
   void dispose() {
@@ -66,7 +67,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('新規登録'),
+        title: const Text(AppConstants.labelSignup),
       ),
       body: SafeArea(
         child: Center(
@@ -84,9 +85,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     color: Colors.blue,
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'アカウント作成',
-                    style: TextStyle(
+                   Text(
+                    AppConstants.labelSignupTitle,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
@@ -98,13 +99,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   TextFormField(
                     controller: _nameController,
                     decoration: const InputDecoration(
-                      labelText: '名前',
+                      labelText: AppConstants.labelName,
                       prefixIcon: Icon(Icons.person),
                       border: OutlineInputBorder(),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return '名前を入力してください';
+                        return AppConstants.valInputName;
                       }
                       return null;
                     },
@@ -116,16 +117,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(
-                      labelText: 'メールアドレス',
+                      labelText: AppConstants.labelEmail,
                       prefixIcon: Icon(Icons.email),
                       border: OutlineInputBorder(),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'メールアドレスを入力してください';
+                        return AppConstants.valInputEmail;
                       }
                       if (!value.contains('@')) {
-                        return '正しいメールアドレスを入力してください';
+                        return AppConstants.valInvalidEmail;
                       }
                       return null;
                     },
@@ -137,7 +138,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(
-                      labelText: 'パスワード',
+                      labelText: AppConstants.labelPassword,
                       prefixIcon: const Icon(Icons.lock),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -152,14 +153,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                         },
                       ),
                       border: const OutlineInputBorder(),
-                      helperText: '8文字以上で入力してください',
+                      helperText: AppConstants.labelPasswordHelper,
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'パスワードを入力してください';
+                        return AppConstants.valInputPassword;
                       }
                       if (value.length < 8) {
-                        return 'パスワードは8文字以上で入力してください';
+                        return AppConstants.labelPasswordHelper;
                       }
                       return null;
                     },
@@ -171,7 +172,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     controller: _confirmPasswordController,
                     obscureText: _obscureConfirmPassword,
                     decoration: InputDecoration(
-                      labelText: 'パスワード(確認)',
+                      labelText: AppConstants.labelPasswordConfirm,
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -189,10 +190,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'パスワード(確認)を入力してください';
+                        return AppConstants.valInputPasswordConfirm;
                       }
                       if (value != _passwordController.text) {
-                        return 'パスワードが一致しません';
+                        return AppConstants.valPasswordMismatch;
                       }
                       return null;
                     },
@@ -203,18 +204,18 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   DropdownButtonFormField<String>(
                     initialValue: _selectedRole,
                     decoration: const InputDecoration(
-                      labelText: '役割',
+                      labelText: AppConstants.labelRole,
                       prefixIcon: Icon(Icons.badge),
                       border: OutlineInputBorder(),
                     ),
                     items: const [
                       DropdownMenuItem(
-                        value: 'admin',
-                        child: Text('管理者(店長・オーナー)'),
+                        value: AppConstants.roleAdmin,
+                        child: Text(AppConstants.labelRoleAdminDescription),
                       ),
                       DropdownMenuItem(
-                        value: 'staff',
-                        child: Text('スタッフ(アルバイト・パート)'),
+                        value: AppConstants.roleStaff,
+                        child: Text(AppConstants.labelRoleStaffDescription),
                       ),
                     ],
                     onChanged: (value) {
@@ -245,7 +246,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                             ),
                           )
                         : const Text(
-                            '登録',
+                            AppConstants.labelRegister,
                             style: TextStyle(fontSize: 16),
                           ),
                   ),

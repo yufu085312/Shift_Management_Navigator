@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/notification_provider.dart';
+import '../../core/constants/app_constants.dart';
 
 class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
@@ -13,13 +14,13 @@ class NotificationsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('通知'),
+        title: const Text(AppConstants.titleNotifications),
         actions: [
           userAsync.when(
             data: (user) => user != null
                 ? IconButton(
                     icon: const Icon(Icons.done_all),
-                    tooltip: 'すべて既読にする',
+                    tooltip: AppConstants.labelMarkAllAsRead,
                     onPressed: () async {
                       final repository = ref.read(notificationRepositoryProvider);
                       await repository.markAllAsRead(user.uid);
@@ -34,14 +35,14 @@ class NotificationsScreen extends ConsumerWidget {
       ),
       body: userAsync.when(
         data: (user) {
-          if (user == null) return const Center(child: Text('ユーザー情報が見つかりません'));
+          if (user == null) return const Center(child: Text(AppConstants.errMsgUserNotFound));
 
           final notificationsAsync = ref.watch(notificationsProvider(user.uid));
 
           return notificationsAsync.when(
             data: (notifications) {
               if (notifications.isEmpty) {
-                return const Center(child: Text('通知はありません'));
+                return const Center(child: Text(AppConstants.msgNoNotifications));
               }
 
               return ListView.builder(
@@ -84,11 +85,11 @@ class NotificationsScreen extends ConsumerWidget {
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('エラー: $e')),
+            error: (e, _) => Center(child: Text('${AppConstants.errMsgGeneric}: $e')),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('エラー: $e')),
+        error: (e, _) => Center(child: Text('${AppConstants.errMsgGeneric}: $e')),
       ),
     );
   }

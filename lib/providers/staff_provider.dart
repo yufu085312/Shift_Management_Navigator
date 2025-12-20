@@ -25,8 +25,25 @@ final currentStaffProvider = FutureProvider<StaffModel?>((ref) async {
   final userAsync = ref.watch(currentUserProvider);
   return userAsync.maybeWhen(
     data: (user) async {
-      if (user == null || user.storeId == null) return null;
+      if (user == null) return null;
       final repository = ref.watch(staffRepositoryProvider);
+      
+      if (user.storeId == null) {
+        // ユーザー情報のstoreIdが未設定の場合、staffsコレクションを全検索して同期を試みる
+        final staff = await repository.findStaffByUserId(user.uid);
+        if (staff != null) {
+          // 同期処理
+          await ref.read(authRepositoryProvider).updateUserData(
+            uid: user.uid,
+            storeId: staff.storeId,
+          );
+          // ユーザー情報を最新にするためにinvalidate
+          ref.invalidate(currentUserProvider);
+          return staff;
+        }
+        return null;
+      }
+      
       return repository.getStaffByUserId(user.uid, user.storeId!);
     },
     orElse: () => null,

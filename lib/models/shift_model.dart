@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../core/constants/app_constants.dart';
 
 part 'shift_model.freezed.dart';
 part 'shift_model.g.dart';
@@ -13,7 +14,7 @@ class ShiftModel with _$ShiftModel {
     required String date, // YYYY-MM-DD
     required String startTime, // HH:mm
     required String endTime, // HH:mm
-    @Default('draft') String status, // "draft" or "confirmed"
+    @Default(AppConstants.shiftStatusDraft) String status, // "draft" or "confirmed"
     String? requestStatus, // "pending_change", "pending_substitute"
     String? requestId, // 関連する申請ID
     @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)

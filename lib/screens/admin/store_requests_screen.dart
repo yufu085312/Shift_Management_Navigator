@@ -7,6 +7,7 @@ import '../../providers/shift_provider.dart';
 import '../../models/shift_request_model.dart';
 import '../../models/staff_model.dart';
 import '../../services/notification_service.dart';
+import '../../core/constants/app_constants.dart';
 
 class StoreRequestsScreen extends ConsumerStatefulWidget {
   const StoreRequestsScreen({super.key});
@@ -28,10 +29,10 @@ class _StoreRequestsScreenState extends ConsumerState<StoreRequestsScreen> {
     final staffsAsync = ref.watch(storeStaffsProvider(user.storeId!));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('シフト申請一覧')),
+      appBar: AppBar(title: const Text(AppConstants.titleShiftRequestList)),
       body: requestsAsync.when(
         data: (requests) {
-          if (requests.isEmpty) return const Center(child: Text('未処理の申請はありません'));
+          if (requests.isEmpty) return const Center(child: Text(AppConstants.msgNoPendingRequests));
 
           return staffsAsync.when(
             data: (staffs) {
@@ -40,7 +41,7 @@ class _StoreRequestsScreenState extends ConsumerState<StoreRequestsScreen> {
                 itemBuilder: (context, index) {
                   final request = requests[index];
                   // 志願者がいる場合は初期値としてセット
-                  if (request.type == 'substitute' && 
+                  if (request.type == AppConstants.requestTypeSubstitute && 
                       request.volunteerStaffId != null && 
                       !_selectedSubstitutes.containsKey(request.id)) {
                     _selectedSubstitutes[request.id] = request.volunteerStaffId!;
@@ -52,7 +53,7 @@ class _StoreRequestsScreenState extends ConsumerState<StoreRequestsScreen> {
                       id: '',
                       userId: '',
                       storeId: '',
-                      name: '不明',
+                      name: AppConstants.labelUnknown,
                       hourlyWage: 0,
                     ),
                   );
@@ -73,11 +74,11 @@ class _StoreRequestsScreenState extends ConsumerState<StoreRequestsScreen> {
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('エラー: $e')),
+            error: (e, _) => Center(child: Text('${AppConstants.errMsgGeneric}: $e')),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('エラー: $e')),
+        error: (e, _) => Center(child: Text('${AppConstants.errMsgGeneric}: $e')),
       ),
     );
   }
@@ -100,7 +101,17 @@ class _RequestListItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isSubstitute = request.type == 'substitute';
+    final isSubstitute = request.type == AppConstants.requestTypeSubstitute;
+    final String typeLabel;
+    if (request.type == AppConstants.requestTypeWish) {
+      typeLabel = AppConstants.labelShiftWish;
+    } else if (isSubstitute) {
+      typeLabel = AppConstants.labelSubstituteWish;
+    } else if (request.type == AppConstants.requestTypeChange) {
+      typeLabel = AppConstants.labelChangeTime;
+    } else {
+      typeLabel = AppConstants.labelStoreRequest;
+    }
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -108,12 +119,12 @@ class _RequestListItem extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           ListTile(
-            title: Text('${staff.name} さん - ${request.type == 'wish' ? '希望' : (isSubstitute ? '代打' : '変更')}'),
+            title: Text('${staff.name}${AppConstants.labelHonorificStaff} - $typeLabel'),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('${request.date} ${request.startTime ?? ''}-${request.endTime ?? ''}'),
-                Text('理由: ${request.reason ?? 'なし'}'),
+                Text('${AppConstants.labelReasonMessage}: ${request.reason ?? AppConstants.labelNone}'),
                 if (isSubstitute && request.volunteerStaffId != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
@@ -124,40 +135,40 @@ class _RequestListItem extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: const Text(
-                        '志願者あり',
+                        AppConstants.msgVolunteerExists,
                         style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
               ],
             ),
-            trailing: request.status == 'pending' 
+            trailing: request.status == AppConstants.requestStatusPending 
               ? Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
                       icon: const Icon(Icons.check, color: Colors.green),
-                      onPressed: () => _handleStatusChange(context, ref, 'approved'),
+                      onPressed: () => _handleStatusChange(context, ref, AppConstants.requestStatusApproved),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close, color: Colors.red),
-                      onPressed: () => _handleStatusChange(context, ref, 'rejected'),
+                      onPressed: () => _handleStatusChange(context, ref, AppConstants.requestStatusRejected),
                     ),
                   ],
                 )
-              : Text('ステータス: ${request.status}', style: const TextStyle(fontWeight: FontWeight.bold)),
+              : Text('${AppConstants.labelStatus}: ${request.status}', style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
-          if (isSubstitute && request.status == 'pending')
+          if (isSubstitute && request.status == AppConstants.requestStatusPending)
             Padding(
               padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
               child: Row(
                 children: [
-                  const Text('代打スタッフ: '),
+                  const Text('${AppConstants.labelSubstituteStaff}: '),
                   const SizedBox(width: 8),
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       initialValue: selectedSubstituteId,
-                      hint: const Text('選択してください'),
+                      hint: const Text(AppConstants.labelSelect),
                       items: allStaffs
                           .where((s) => s.id != request.staffId) // 自分以外
                           .map((s) => DropdownMenuItem(
@@ -183,9 +194,9 @@ class _RequestListItem extends ConsumerWidget {
 
   Future<void> _handleStatusChange(BuildContext context, WidgetRef ref, String newStatus) async {
     // 代打申請の承認時にスタッフが選択されているかチェック
-    if (request.type == 'substitute' && newStatus == 'approved' && selectedSubstituteId == null) {
+    if (request.type == AppConstants.requestTypeSubstitute && newStatus == AppConstants.requestStatusApproved && selectedSubstituteId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('代打スタッフを選択してください'), backgroundColor: Colors.orange),
+        const SnackBar(content: Text(AppConstants.valSelectStaff), backgroundColor: Colors.orange),
       );
       return;
     }
@@ -194,9 +205,9 @@ class _RequestListItem extends ConsumerWidget {
     final shiftRepository = ref.read(shiftRepositoryProvider);
 
     // 承認時のシフト反映処理
-    if (newStatus == 'approved') {
+    if (newStatus == AppConstants.requestStatusApproved) {
       try {
-        if (request.type == 'wish') {
+        if (request.type == AppConstants.requestTypeWish) {
           // シフト希望の承認：新規シフト(下書き)を作成
           await shiftRepository.createShift(
             storeId: request.storeId,
@@ -204,9 +215,9 @@ class _RequestListItem extends ConsumerWidget {
             date: request.date,
             startTime: request.startTime ?? '09:00',
             endTime: request.endTime ?? '18:00',
-            status: 'draft',
+            status: AppConstants.shiftStatusDraft,
           );
-        } else if (request.type == 'change' || request.type == 'substitute') {
+        } else if (request.type == AppConstants.requestTypeChange || request.type == AppConstants.requestTypeSubstitute) {
           // 変更・代打の承認：対象日の既存シフトを探して更新
           final existingShifts = await shiftRepository.getShiftsByStaffAndDateRange(
             staffId: request.staffId,
@@ -219,7 +230,7 @@ class _RequestListItem extends ConsumerWidget {
             final shift = existingShifts.first;
             
             // 代打の場合はスタッフIDも変更する
-            final String? newStaffId = request.type == 'substitute' ? selectedSubstituteId : null;
+            final String? newStaffId = request.type == AppConstants.requestTypeSubstitute ? selectedSubstituteId : null;
 
             await shiftRepository.updateShift(
               shiftId: shift.id,
@@ -234,11 +245,11 @@ class _RequestListItem extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('シフト反映に失敗しました: $e'), backgroundColor: Colors.red),
+            SnackBar(content: Text('${AppConstants.msgShiftUpdateFailed}: $e'), backgroundColor: Colors.red),
           );
         }
       }
-    } else if (newStatus == 'rejected') {
+    } else if (newStatus == AppConstants.requestStatusRejected) {
       // 却下時もシフト側の申請フラグをクリアする
       try {
         if (request.targetShiftId != null) {
@@ -258,35 +269,38 @@ class _RequestListItem extends ConsumerWidget {
     final userId = staff.userId;
     if (userId.isNotEmpty) {
       final notificationService = ref.read(notificationServiceProvider);
-      final statusText = newStatus == 'approved' ? '承認' : '却下';
+      final statusText = newStatus == AppConstants.requestStatusApproved ? AppConstants.labelApproved : AppConstants.labelRejected;
       await notificationService.notifyUser(
         userId: userId,
-        title: '申請が$statusTextされました',
-        body: '${request.date}の${request.type == 'wish' ? 'シフト希望' : '変更申請'}が$statusTextされました。',
+        title: '${AppConstants.msgRequestUpdateTitle}${statusText}${AppConstants.msgRequestUpdateBodyPrefix}',
+        body: '${request.date}${AppConstants.labelParticleNo}${request.type == AppConstants.requestTypeWish ? AppConstants.labelShiftWish : AppConstants.labelChangeRequest}${AppConstants.labelParticleGa}$statusText${AppConstants.msgNotificationStatusSuffix}',
       );
     }
 
     // 代打相手にも通知（任意）
-    if (request.type == 'substitute' && newStatus == 'approved' && selectedSubstituteId != null) {
+    if (request.type == AppConstants.requestTypeSubstitute && newStatus == AppConstants.requestStatusApproved && selectedSubstituteId != null) {
       final subStaff = allStaffs.firstWhere((s) => s.id == selectedSubstituteId);
       if (subStaff.userId.isNotEmpty) {
         final notificationService = ref.read(notificationServiceProvider);
         await notificationService.notifyUser(
           userId: subStaff.userId,
-          title: '代打シフトが割り当てられました',
-          body: '${request.date}に${staff.name}さんの代わりとしてシフトが割り当てられました。',
+          title: AppConstants.msgAssignSubstituteTitle,
+          body: '${request.date}${AppConstants.labelParticleNi}${staff.name}${AppConstants.msgSubstituteAssignBodySuffix}',
         );
       }
     }
 
     ref.invalidate(storeRequestsProvider(request.storeId));
-    ref.invalidate(staffRequestsProvider(request.staffId));
+    ref.invalidate(staffRequestsProvider(StaffRequestQueryParams(
+      staffId: request.staffId,
+      storeId: request.storeId,
+    )));
     // シフト一覧に関連するプロバイダーも無効化
     ref.invalidate(storeShiftsProvider);
     ref.invalidate(staffShiftsProvider);
     
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('ステータスを更新しました')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppConstants.msgUpdateComplete)));
     }
   }
 }
