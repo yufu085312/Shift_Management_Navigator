@@ -10,6 +10,7 @@ import '../../providers/shift_request_provider.dart';
 import 'staff_management_screen.dart';
 import 'shift_create_screen.dart';
 import 'store_requests_screen.dart';
+import 'subscription_screen.dart';
 
 class AdminDashboardScreen extends ConsumerWidget {
   const AdminDashboardScreen({super.key});
@@ -105,10 +106,13 @@ class AdminDashboardScreen extends ConsumerWidget {
                   ),
                   _buildMenuCard(
                     context,
-                    '設定',
-                    Icons.settings,
-                    Colors.grey,
-                    () {}, // TODO: 設定画面
+                    'サブスクリプション',
+                    Icons.credit_card,
+                    Colors.green,
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
+                    ),
                   ),
                 ],
               ),
