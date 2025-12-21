@@ -11,10 +11,24 @@ flutter run -d chrome --web-port=8080
 ```
 ※ Web 版の Firebase 認証や Stripe 連携を正しく動作させるため、ポート `8080` での起動を推奨します。
 
-### Firebase の設定
-- **Blaze プラン**: Cloud Functions (第2世代) を使用するため必須です。
-- **Authentication**: Email/Password 認証を有効にしてください。
-- **Firestore**: 日本時間での運用を想定したインデックス設定が必要です。
+### プラットフォーム別セットアップ
+- **iOS/macOS**:
+  - CocoaPods のインストールが必要です (`brew install cocoapods`)。
+  - `ios` または `macos` ディレクトリで `pod install` を実行してください。
+- **Android**:
+  - Android Studio と Android SDK のセットアップが必要です。
+
+### Firebase の設定 (重要)
+セキュリティ保護のため、以下の設定ファイルは Git 管理から除外されています。新規環境では既存のプロジェクトから取得するか、Firebase CLI で再生成して配置してください。
+
+1. **設定ファイルの配置場所**:
+   - `ios/Runner/GoogleService-Info.plist`
+   - `macos/Runner/GoogleService-Info.plist`
+   - `lib/firebase_options.dart`
+2. **プロジェクト設定**:
+   - **Blaze プラン**: Cloud Functions (第2世代) を使用するため必須です。
+   - **Authentication**: Email/Password 認証を有効にしてください。
+   - **Firestore**: 日本時間での運用を想定したインデックス設定が必要です。
 
 ## 2. 実装時のチェックリスト
 
