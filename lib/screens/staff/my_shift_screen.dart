@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/staff_provider.dart';
 import '../../providers/shift_provider.dart';
 import '../../models/shift_model.dart';
+import '../../models/shift_request_model.dart';
 import 'wish_submission_screen.dart';
 import 'change_request_screen.dart';
 import 'notifications_screen.dart';
@@ -165,9 +166,9 @@ class _MyShiftScreenState extends ConsumerState<MyShiftScreen> {
           return shiftsAsync.when(
             data: (shifts) => requestsAsync.when(
               data: (requests) {
-                // 申請中の希望のみを抽出（pendingかつwish）
-                final pendingWishes = requests.where((r) => 
-                  r.status == AppConstants.requestStatusPending && 
+                // 申請中または却下された希望を抽出
+                final relevantWishes = requests.where((r) => 
+                  (r.status == AppConstants.requestStatusPending || r.status == AppConstants.requestStatusRejected) && 
                   r.type == AppConstants.requestTypeWish
                 ).toList();
 
@@ -191,14 +192,43 @@ class _MyShiftScreenState extends ConsumerState<MyShiftScreen> {
                       eventLoader: (day) {
                         final dateStr = DateFormat('yyyy-MM-dd').format(day);
                         final dayShifts = shifts.where((s) => s.date == dateStr).toList();
-                        final dayRequests = pendingWishes.where((r) => r.date == dateStr).toList();
+                        final dayRequests = relevantWishes.where((r) => r.date == dateStr).toList();
                         return [...dayShifts, ...dayRequests];
                       },
-                      headerStyle: const HeaderStyle(titleCentered: true),
                       calendarStyle: const CalendarStyle(
                         todayDecoration: BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
                         selectedDecoration: BoxDecoration(color: Colors.orange, shape: BoxShape.circle),
-                        markerDecoration: BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+                      ),
+                      calendarBuilders: CalendarBuilders(
+                        markerBuilder: (context, date, events) {
+                          if (events.isEmpty) return const SizedBox.shrink();
+                          
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: events.take(3).map((event) {
+                              Color color = Colors.grey;
+                              if (event is ShiftModel) {
+                                color = event.status == AppConstants.shiftStatusConfirmed
+                                    ? Colors.green
+                                    : Colors.blue;
+                              } else if (event is ShiftRequestModel) {
+                                color = event.status == AppConstants.requestStatusRejected
+                                    ? Colors.red
+                                    : Colors.orange;
+                              }
+                              
+                              return Container(
+                                margin: const EdgeInsets.symmetric(horizontal: 0.5),
+                                width: 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: color,
+                                ),
+                              );
+                            }).toList(),
+                          );
+                        },
                       ),
                     ),
                     const Divider(),
@@ -208,7 +238,7 @@ class _MyShiftScreenState extends ConsumerState<MyShiftScreen> {
                           builder: (context) {
                             final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDay!);
                             final dayShifts = shifts.where((s) => s.date == dateStr).toList();
-                            final dayRequests = pendingWishes.where((r) => r.date == dateStr).toList();
+                            final dayRequests = relevantWishes.where((r) => r.date == dateStr).toList();
                             
                             if (dayShifts.isEmpty && dayRequests.isEmpty) {
                               return const Center(child: Text(AppConstants.labelShiftNoShifts));
@@ -308,27 +338,27 @@ class _PendingWishItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isRejected = request.status == AppConstants.requestStatusRejected;
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Colors.orange.shade50,
+      color: isRejected ? Colors.red.shade50 : Colors.orange.shade50,
       child: ListTile(
-        title: const Text(
+        title: Text(
           AppConstants.labelShiftWish,
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.orange,
+            color: isRejected ? Colors.red : Colors.orange,
           ),
         ),
         subtitle: Text(
-          request.startTime != null && request.endTime != null
-              ? '${request.startTime} - ${request.endTime}'
-              : AppConstants.labelShiftWish,
+          '${request.startTime ?? ""} - ${request.endTime ?? ""}',
           style: const TextStyle(fontSize: 18),
         ),
-        trailing: const Chip(
-          label: Text(AppConstants.labelShiftRequesting),
-          backgroundColor: Colors.orange,
-          labelStyle: TextStyle(color: Colors.white, fontSize: 12),
+        trailing: Chip(
+          label: Text(isRejected ? AppConstants.labelRejected : AppConstants.labelShiftRequesting),
+          backgroundColor: isRejected ? Colors.red : Colors.orange,
+          labelStyle: const TextStyle(color: Colors.white, fontSize: 12),
         ),
       ),
     );

@@ -250,7 +250,7 @@ class _RequestListItem extends ConsumerWidget {
         }
       }
     } else if (newStatus == AppConstants.requestStatusRejected) {
-      // 却下時もシフト側の申請フラグをクリアする
+      // 見送り時もシフト側の申請フラグをクリアする
       try {
         if (request.targetShiftId != null) {
           await shiftRepository.updateShift(

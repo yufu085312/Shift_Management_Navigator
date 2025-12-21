@@ -135,7 +135,7 @@ class ShiftRepository {
     await _firestore.collection(AppConstants.collectionShifts).doc(shiftId).delete();
   }
 
-  // シフトを公開(ステータスを確定に変更)
+  // シフトを公開(ステータスを公開済みに変更)
   Future<void> publishShifts({
     required String storeId,
     required String startDate,
