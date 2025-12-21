@@ -10,6 +10,11 @@ import '../../models/shift_model.dart';
 import '../../models/staff_model.dart';
 import '../../services/auto_assign_service.dart';
 import '../../services/notification_service.dart';
+import '../../providers/shift_request_provider.dart';
+import '../../providers/staff_provider.dart';
+import '../../models/shift_request_model.dart';
+import '../../models/shift_model.dart';
+import '../../services/notification_service.dart';
 import '../../core/constants/app_constants.dart';
 
 class ShiftCreateScreen extends ConsumerStatefulWidget {
@@ -35,6 +40,7 @@ class _ShiftCreateScreenState extends ConsumerState<ShiftCreateScreen> {
       startDate: DateFormat('yyyy-MM-dd').format(_focusedDay.subtract(const Duration(days: 42))),
       endDate: DateFormat('yyyy-MM-dd').format(_focusedDay.add(const Duration(days: 42))),
     )));
+    final requestsAsync = ref.watch(storeRequestsProvider(user.storeId!));
 
     return Scaffold(
       appBar: AppBar(title: const Text(AppConstants.titleShiftCreate)),
@@ -55,67 +61,141 @@ class _ShiftCreateScreenState extends ConsumerState<ShiftCreateScreen> {
             onFormatChanged: (format) {
               setState(() => _calendarFormat = format);
             },
+            eventLoader: (day) {
+              final dateStr = DateFormat('yyyy-MM-dd').format(day);
+              final dayShifts = shiftsAsync.value?.where((s) => s.date == dateStr).toList() ?? [];
+              final dayRequests = requestsAsync.value?.where((r) => 
+                r.date == dateStr && 
+                r.status == AppConstants.requestStatusPending && 
+                r.type == AppConstants.requestTypeWish
+              ).toList() ?? [];
+              return [...dayShifts, ...dayRequests];
+            },
             headerStyle: const HeaderStyle(titleCentered: true),
             calendarStyle: CalendarStyle(
               todayDecoration: BoxDecoration(color: Colors.blue.shade100, shape: BoxShape.circle),
               selectedDecoration: const BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
+            ),
+            calendarBuilders: CalendarBuilders(
+              markerBuilder: (context, date, events) {
+                if (events.isEmpty) return const SizedBox.shrink();
+                
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: events.take(3).map((event) {
+                    Color color = Colors.grey;
+                    if (event is ShiftModel) {
+                      color = event.status == AppConstants.shiftStatusConfirmed
+                          ? Colors.green
+                          : Colors.blue;
+                    } else if (event is ShiftRequestModel) {
+                      color = Colors.orange;
+                    }
+                    
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 0.5),
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: color,
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
             ),
           ),
           const Divider(),
           if (_selectedDay != null)
             Expanded(
               child: shiftsAsync.when(
-                data: (shifts) {
-                  final dayShifts = shifts.where((s) => s.date == DateFormat('yyyy-MM-dd').format(_selectedDay!)).toList();
-                  
-                  return Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              DateFormat(AppConstants.labelDateFormatFull, 'ja').format(_selectedDay!),
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                data: (shifts) => requestsAsync.when(
+                  data: (requests) {
+                      final dayShifts = shifts.where((s) => s.date == DateFormat('yyyy-MM-dd').format(_selectedDay!)).toList();
+                      final dayRequests = requests.where((r) => 
+                        r.date == DateFormat('yyyy-MM-dd').format(_selectedDay!) &&
+                        r.status == AppConstants.requestStatusPending &&
+                        r.type == AppConstants.requestTypeWish
+                      ).toList();
+
+                      return Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  DateFormat(AppConstants.labelDateFormatFull, 'ja').format(_selectedDay!),
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                                ElevatedButton.icon(
+                                  onPressed: () => _showShiftDialog(context, date: _selectedDay!),
+                                  icon: const Icon(Icons.add),
+                                  label: const Text(AppConstants.labelAdd),
+                                ),
+                              ],
                             ),
-                            ElevatedButton.icon(
-                              onPressed: () => _showShiftDialog(context, date: _selectedDay!),
-                              icon: const Icon(Icons.add),
-                              label: const Text(AppConstants.labelAdd),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: staffsAsync.when(
-                          data: (staffs) {
-                            if (dayShifts.isEmpty) return const Center(child: Text(AppConstants.labelShiftNoShifts));
-                            return ListView.builder(
-                              itemCount: dayShifts.length,
-                              itemBuilder: (context, index) {
-                                final shift = dayShifts[index];
-                                final staff = staffs.firstWhere((s) => s.id == shift.staffId, orElse: () => const StaffModel(id: '', userId: '', storeId: '', name: AppConstants.labelUnknown, hourlyWage: 0));
-                                return _ShiftListItem(
-                                  shift: shift,
-                                  staffName: staff.name,
-                                  onEdit: () => _showShiftDialog(context, date: _selectedDay!, shift: shift),
-                                  onDelete: () => _confirmDelete(context, shift.id),
+                          ),
+                          Expanded(
+                            child: staffsAsync.when(
+                              data: (staffs) {
+                                if (dayShifts.isEmpty && dayRequests.isEmpty) {
+                                  return const Center(child: Text(AppConstants.labelShiftNoShifts));
+                                }
+                                return ListView(
+                                  children: [
+                                    if (dayShifts.isNotEmpty) ...[
+                                      ...dayShifts.map((shift) {
+                                        final staff = staffs.firstWhere(
+                                          (s) => s.id == shift.staffId,
+                                          orElse: () => const StaffModel(id: '', userId: '', storeId: '', name: AppConstants.labelUnknown, hourlyWage: 0),
+                                        );
+                                        return _ShiftListItem(
+                                          shift: shift,
+                                          staffName: staff.name,
+                                          onEdit: () => _showShiftDialog(context, date: _selectedDay!, shift: shift),
+                                          onDelete: () => _confirmDelete(context, shift.id),
+                                        );
+                                      }),
+                                    ],
+                                    if (dayRequests.isNotEmpty) ...[
+                                      const Padding(
+                                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                        child: Text(
+                                          AppConstants.labelShiftWish,
+                                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
+                                        ),
+                                      ),
+                                      ...dayRequests.map((request) {
+                                        final staff = staffs.firstWhere(
+                                          (s) => s.id == request.staffId,
+                                          orElse: () => const StaffModel(id: '', userId: '', storeId: '', name: AppConstants.labelUnknown, hourlyWage: 0),
+                                        );
+                                        return _WishListItem(
+                                          request: request,
+                                          staffName: staff.name,
+                                        );
+                                      }),
+                                    ],
+                                  ],
                                 );
                               },
-                            );
-                          },
-                          loading: () => const Center(child: CircularProgressIndicator()),
-                          error: (e, _) => Center(child: Text('${AppConstants.errMsgGeneric}: $e')),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('${AppConstants.errMsgGeneric}: $e')),
+                              loading: () => const Center(child: CircularProgressIndicator()),
+                              error: (e, _) => Center(child: Text('${AppConstants.errMsgGeneric}: $e')),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => Center(child: Text('${AppConstants.errMsgGeneric}: $e')),
+                  ),
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => Center(child: Text('${AppConstants.errMsgGeneric}: $e')),
+                ),
               ),
-            ),
         ],
       ),
       bottomNavigationBar: _selectedDay != null ? _buildBottomBar() : null,
@@ -444,5 +524,140 @@ class _ShiftEditDialogState extends ConsumerState<_ShiftEditDialog> {
         ),
       ],
     );
+  }
+}
+
+class _WishListItem extends ConsumerWidget {
+  final ShiftRequestModel request;
+  final String staffName;
+
+  const _WishListItem({
+    required this.request,
+    required this.staffName,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      color: Colors.orange.shade50,
+      child: ListTile(
+        title: Text(staffName),
+        subtitle: Text(
+          '${request.startTime ?? ""} - ${request.endTime ?? ""}',
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Chip(
+              label: const Text(AppConstants.labelShiftRequesting),
+              backgroundColor: Colors.orange.shade100,
+              side: BorderSide.none,
+              labelStyle: TextStyle(color: Colors.orange.shade900, fontSize: 10, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton(
+              onPressed: () => _handleApprove(context, ref),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                minimumSize: const Size(0, 32),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              ),
+              child: const Text(AppConstants.labelApproved, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(width: 4),
+            IconButton(
+              onPressed: () => _handleReject(context, ref),
+              icon: const Icon(Icons.close, color: Colors.red, size: 20),
+              tooltip: AppConstants.labelRejected,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleReject(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(AppConstants.labelRejected),
+        content: Text('${request.date} $staffNameさんの希望を見送りますか？'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text(AppConstants.labelCancel)),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text(AppConstants.labelRejected)),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final requestRepository = ref.read(shiftRequestRepositoryProvider);
+
+      // 1. 申請ステータス更新 (見送り)
+      await requestRepository.updateRequestStatus(request.id, AppConstants.requestStatusRejected);
+
+      // 2. プロバイダー無効化
+      ref.invalidate(storeRequestsProvider(request.storeId));
+      ref.invalidate(storeShiftsProvider);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppConstants.msgUpdateComplete)));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${AppConstants.errMsgGeneric}: $e')));
+      }
+    }
+  }
+
+  Future<void> _handleApprove(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(AppConstants.labelApproved),
+        content: Text('${request.date} $staffNameさんの希望を承諾してシフト(下書き)を作成しますか？'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text(AppConstants.labelCancel)),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text(AppConstants.labelApproved)),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final shiftRepository = ref.read(shiftRepositoryProvider);
+      final requestRepository = ref.read(shiftRequestRepositoryProvider);
+
+      // 1. シフト作成 (下書き)
+      await shiftRepository.createShift(
+        storeId: request.storeId,
+        staffId: request.staffId,
+        date: request.date,
+        startTime: request.startTime ?? '09:00',
+        endTime: request.endTime ?? '18:00',
+        status: AppConstants.shiftStatusDraft,
+      );
+
+      // 2. 申請ステータス更新
+      await requestRepository.updateRequestStatus(request.id, AppConstants.requestStatusApproved);
+
+      // 3. プロバイダー無効化
+      ref.invalidate(storeRequestsProvider(request.storeId));
+      ref.invalidate(storeShiftsProvider);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppConstants.msgUpdateComplete)));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${AppConstants.errMsgGeneric}: $e')));
+      }
+    }
   }
 }

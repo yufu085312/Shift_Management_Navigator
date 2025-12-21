@@ -35,8 +35,8 @@ class AppConstants {
 
   // Shift Request Status
   static const String requestStatusPending = 'pending';
-  static const String requestStatusApproved = 'approved';
-  static const String requestStatusRejected = 'rejected';
+  static const String requestStatusApproved = '承認';
+  static const String requestStatusRejected = '見送り';
 
   // Internal Shift Request Status (for Shift document)
   static const String shiftRequestStatusPendingChange = 'pending_change';
@@ -163,9 +163,9 @@ class AppConstants {
   static const String labelMenu = 'メニュー';
   static const String labelSubstituteRecruitment = '代打募集一覧';
   static const String labelShiftNoShifts = 'この日のシフトはありません';
-  static const String labelShiftWaitingPublish = '公開待ち';
+  static const String labelShiftWaitingPublish = '作成中';
   static const String labelShiftRequesting = '申請中';
-  static const String labelWorkingTime = '勤務時間';
+  static const String labelWorkingTime = '確定';
   static const String labelStaffNotFound = 'スタッフ情報が見つかりません';
 
   // Change/Substitute Request Labels
@@ -204,7 +204,7 @@ class AppConstants {
   static const String msgVolunteerExists = '志願者あり';
   static const String msgShiftUpdateFailed = 'シフト反映に失敗しました';
   static const String labelApproved = '承認';
-  static const String labelRejected = '却下';
+  static const String labelRejected = '見送り';
   static const String labelStatus = 'ステータス';
 
   // Subscription Screen Labels
@@ -243,7 +243,7 @@ class AppConstants {
   static const String labelWishTimeHint = '希望時間(未指定の場合は終日)';
   static const String labelSelectedDate = '選択日';
   static const String labelDraft = '下書き';
-  static const String labelConfirmed = '確定';
+  static const String labelConfirmed = '公開済み';
   static const String labelStaff = 'スタッフ';
   static const String labelNone = 'なし';
   static const String labelUnknown = '不明';

@@ -33,7 +33,7 @@ mixin _$ShiftRequestModel {
       throw _privateConstructorUsedError; // HH:mm (optional for wish)
   String? get reason => throw _privateConstructorUsedError;
   String get status =>
-      throw _privateConstructorUsedError; // "pending", "approved", "rejected"
+      throw _privateConstructorUsedError; // "pending", "承認", "見送り"
   String? get targetShiftId => throw _privateConstructorUsedError; // 対象シフトID
   String? get volunteerStaffId =>
       throw _privateConstructorUsedError; // 代打志願スタッフID
@@ -329,7 +329,7 @@ class _$ShiftRequestModelImpl implements _ShiftRequestModel {
   @override
   @JsonKey()
   final String status;
-  // "pending", "approved", "rejected"
+  // "pending", "承認", "見送り"
   @override
   final String? targetShiftId;
   // 対象シフトID
@@ -448,7 +448,7 @@ abstract class _ShiftRequestModel implements ShiftRequestModel {
   @override
   String? get reason;
   @override
-  String get status; // "pending", "approved", "rejected"
+  String get status; // "pending", "承認", "見送り"
   @override
   String? get targetShiftId; // 対象シフトID
   @override
