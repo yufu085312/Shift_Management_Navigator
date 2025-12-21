@@ -61,3 +61,4 @@ lib/firebase_options.dart
 # Build logs and temporary files
 build_log.txt
 *.log
+*.txt
