@@ -35,11 +35,16 @@ cd Shift_Management_Navigator
 flutter pub get
 ```
 
-### 3. Firebaseの設定
-```bash
-flutterfire configure
-```
-※ `lib/firebase_options.dart` が生成されます。Firestore、Authentication（メール/パスワード）を有効にしてください。
+### 3. Firebase / プラットフォームの設定 (重要)
+セキュリティ保護のため、Firebase の設定ファイルは Git 管理から除外されています。新規環境では以下の手順が必要です。
+
+1. **Firebase 設定ファイルの配置**:
+   - `lib/firebase_options.dart`: `flutterfire configure` を実行して生成してください。
+   - `ios/Runner/GoogleService-Info.plist`: Firebase コンソールからダウンロードして配置してください。
+   - `macos/Runner/GoogleService-Info.plist`: 同上。
+2. **iOS/macOS の依存関係解決**:
+   - `brew install cocoapods` で CocoaPods を導入してください。
+   - `ios` または `macos` ディレクトリで `pod install` を実行してください。
 
 ---
 
