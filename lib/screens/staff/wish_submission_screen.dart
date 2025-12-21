@@ -58,6 +58,7 @@ class _WishSubmissionScreenState extends ConsumerState<WishSubmissionScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text(AppConstants.msgRequestSubmitted)),
         );
+        ref.invalidate(staffRequestsProvider);
         Navigator.pop(context);
       }
     } catch (e) {

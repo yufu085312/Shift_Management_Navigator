@@ -90,9 +90,9 @@ class _ChangeRequestScreenState extends ConsumerState<ChangeRequestScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text(AppConstants.msgRequestSubmitted)),
         );
-        Navigator.pop(context);
-        // シフト一覧を更新するためにinvalidate
         ref.invalidate(staffShiftsProvider);
+        ref.invalidate(staffRequestsProvider);
+        ref.invalidate(storeRequestsProvider); // 管理者側の通知用
       }
     } catch (e) {
       if (mounted) {

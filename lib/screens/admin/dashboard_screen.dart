@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../providers/auth_provider.dart';
@@ -86,7 +87,10 @@ class AdminDashboardScreen extends ConsumerWidget {
                         icon: const Icon(Icons.copy),
                         tooltip: AppConstants.msgIdCopied,
                         onPressed: () {
-                          // TODO: Copy store ID
+                          Clipboard.setData(ClipboardData(text: user.storeId!));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text(AppConstants.msgIdCopied)),
+                          );
                         },
                       ),
                     ),
