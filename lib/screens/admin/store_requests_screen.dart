@@ -17,7 +17,7 @@ class StoreRequestsScreen extends ConsumerStatefulWidget {
 }
 
 class _StoreRequestsScreenState extends ConsumerState<StoreRequestsScreen> {
-  // 代打スタッフの選択状態を保持 (requestId -> staffId)
+  // 交代スタッフの選択状態を保持 (requestId -> staffId)
   final Map<String, String> _selectedSubstitutes = {};
 
   @override
@@ -193,7 +193,7 @@ class _RequestListItem extends ConsumerWidget {
   }
 
   Future<void> _handleStatusChange(BuildContext context, WidgetRef ref, String newStatus) async {
-    // 代打申請の承認時にスタッフが選択されているかチェック
+    // 交代申請の承認時にスタッフが選択されているかチェック
     if (request.type == AppConstants.requestTypeSubstitute && newStatus == AppConstants.requestStatusApproved && selectedSubstituteId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text(AppConstants.valSelectStaff), backgroundColor: Colors.orange),
@@ -218,7 +218,7 @@ class _RequestListItem extends ConsumerWidget {
             status: AppConstants.shiftStatusDraft,
           );
         } else if (request.type == AppConstants.requestTypeChange || request.type == AppConstants.requestTypeSubstitute) {
-          // 変更・代打の承認：対象日の既存シフトを探して更新
+          // 変更・交代の承認：対象日の既存シフトを探して更新
           final existingShifts = await shiftRepository.getShiftsByStaffAndDateRange(
             staffId: request.staffId,
             storeId: request.storeId,
@@ -229,7 +229,7 @@ class _RequestListItem extends ConsumerWidget {
           if (existingShifts.isNotEmpty) {
             final shift = existingShifts.first;
             
-            // 代打の場合はスタッフIDも変更する
+            // 交代の場合はスタッフIDも変更する
             final String? newStaffId = request.type == AppConstants.requestTypeSubstitute ? selectedSubstituteId : null;
 
             await shiftRepository.updateShift(
@@ -270,14 +270,30 @@ class _RequestListItem extends ConsumerWidget {
     if (userId.isNotEmpty) {
       final notificationService = ref.read(notificationServiceProvider);
       final statusText = newStatus == AppConstants.requestStatusApproved ? AppConstants.labelApproved : AppConstants.labelRejected;
+      
+      // 申請タイプに応じたラベルを選択
+      final String typeLabel;
+      switch (request.type) {
+        case AppConstants.requestTypeWish:
+          typeLabel = AppConstants.labelShiftWish;
+          break;
+        case AppConstants.requestTypeSubstitute:
+          typeLabel = AppConstants.labelSubstituteRequest;
+          break;
+        case AppConstants.requestTypeChange:
+        default:
+          typeLabel = AppConstants.labelChangeRequest;
+          break;
+      }
+
       await notificationService.notifyUser(
         userId: userId,
         title: '${AppConstants.msgRequestUpdateTitle}${statusText}${AppConstants.msgRequestUpdateBodyPrefix}',
-        body: '${request.date}${AppConstants.labelParticleNo}${request.type == AppConstants.requestTypeWish ? AppConstants.labelShiftWish : AppConstants.labelChangeRequest}${AppConstants.labelParticleGa}$statusText${AppConstants.msgNotificationStatusSuffix}',
+        body: '${request.date}${AppConstants.labelParticleNo}${typeLabel}${AppConstants.labelParticleGa}$statusText${AppConstants.msgNotificationStatusSuffix}',
       );
     }
 
-    // 代打相手にも通知（任意）
+    // 交代相手にも通知（任意）
     if (request.type == AppConstants.requestTypeSubstitute && newStatus == AppConstants.requestStatusApproved && selectedSubstituteId != null) {
       final subStaff = allStaffs.firstWhere((s) => s.id == selectedSubstituteId);
       if (subStaff.userId.isNotEmpty) {

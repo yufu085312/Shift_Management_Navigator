@@ -48,6 +48,8 @@ class SubstituteRecruitmentScreen extends ConsumerWidget {
           const SnackBar(content: Text(AppConstants.msgVolunteerSuccess)),
         );
         ref.invalidate(recruitingSubstitutesProvider(staff.storeId));
+        ref.invalidate(staffRequestsProvider);
+        ref.invalidate(staffShiftsProvider);
       }
     } catch (e) {
       if (context.mounted) {
@@ -83,6 +85,8 @@ class SubstituteRecruitmentScreen extends ConsumerWidget {
                   final shift = shifts[index];
                   // 自分の募集はグレイアウトまたは非表示
                   final isOwn = shift.staffId == staff.id;
+                  final hasVolunteer = shift.volunteerStaffId != null;
+                  final isVolunteer = shift.volunteerStaffId == staff.id;
 
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
@@ -91,10 +95,13 @@ class SubstituteRecruitmentScreen extends ConsumerWidget {
                       subtitle: Text(isOwn ? AppConstants.msgOwnRecruitment : AppConstants.msgRecruitingSubstitute),
                       trailing: isOwn
                           ? const Text(AppConstants.labelOwnRecruitment, style: TextStyle(color: Colors.grey))
-                          : ElevatedButton(
-                              onPressed: () => _volunteer(context, ref, shift),
-                              child: const Text(AppConstants.labelAccept),
-                            ),
+                          : hasVolunteer
+                              ? Text(isVolunteer ? AppConstants.labelAlreadyVolunteered : AppConstants.labelVolunteerInProgress,
+                                  style: TextStyle(color: isVolunteer ? Colors.orange : Colors.grey))
+                              : ElevatedButton(
+                                  onPressed: () => _volunteer(context, ref, shift),
+                                  child: const Text(AppConstants.labelAccept),
+                                ),
                     ),
                   );
                 },

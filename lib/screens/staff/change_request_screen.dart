@@ -18,7 +18,7 @@ class ChangeRequestScreen extends ConsumerStatefulWidget {
 
 class _ChangeRequestScreenState extends ConsumerState<ChangeRequestScreen> {
   String _requestType = AppConstants.requestTypeChange; // デフォルトは時間変更
-  ShiftModel? _selectedShift;
+  String? _selectedShiftId;
   TimeOfDay? _newStartTime;
   TimeOfDay? _newEndTime;
   final _reasonController = TextEditingController();
@@ -30,13 +30,15 @@ class _ChangeRequestScreenState extends ConsumerState<ChangeRequestScreen> {
     super.dispose();
   }
 
-  Future<void> _submitRequest() async {
-    if (_selectedShift == null) {
+  Future<void> _submitRequest(List<ShiftModel> allShifts) async {
+    if (_selectedShiftId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text(AppConstants.valSelectTargetShift)),
       );
       return;
     }
+
+    final selectedShift = allShifts.firstWhere((s) => s.id == _selectedShiftId);
 
     if (_requestType == AppConstants.requestTypeChange && (_newStartTime == null || _newEndTime == null)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -57,12 +59,12 @@ class _ChangeRequestScreenState extends ConsumerState<ChangeRequestScreen> {
       await repository.createRequest(
         staffId: staff.id,
         storeId: staff.storeId,
-        date: _selectedShift!.date,
+        date: selectedShift.date,
         type: _requestType,
-        startTime: _requestType == AppConstants.requestTypeChange ? _formatTime(_newStartTime!) : _selectedShift!.startTime,
-        endTime: _requestType == AppConstants.requestTypeChange ? _formatTime(_newEndTime!) : _selectedShift!.endTime,
+        startTime: _requestType == AppConstants.requestTypeChange ? _formatTime(_newStartTime!) : selectedShift.startTime,
+        endTime: _requestType == AppConstants.requestTypeChange ? _formatTime(_newEndTime!) : selectedShift.endTime,
         reason: _reasonController.text.trim(),
-        targetShiftId: _selectedShift!.id,
+        targetShiftId: selectedShift.id,
       );
 
       // 通知処理 (失敗しても申請自体は完了とする)
@@ -87,12 +89,22 @@ class _ChangeRequestScreenState extends ConsumerState<ChangeRequestScreen> {
       }
 
       if (mounted) {
+        setState(() {
+          _selectedShiftId = null;
+          _newStartTime = null;
+          _newEndTime = null;
+          _reasonController.clear();
+        });
+        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text(AppConstants.msgRequestSubmitted)),
         );
         ref.invalidate(staffShiftsProvider);
         ref.invalidate(staffRequestsProvider);
         ref.invalidate(storeRequestsProvider); // 管理者側の通知用
+
+        // 提出後は画面を閉じるのが一般的
+        Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
@@ -154,17 +166,19 @@ class _ChangeRequestScreenState extends ConsumerState<ChangeRequestScreen> {
                 const SizedBox(height: 8),
                 shiftsAsync.when(
                   data: (shifts) {
-                    final upcomingShifts = shifts.where((s) => s.requestId == null).toList();
+                    final upcomingShifts = shifts.where((s) => 
+                      s.requestId == null && s.status == AppConstants.shiftStatusConfirmed
+                    ).toList();
                     if (upcomingShifts.isEmpty) return const Text(AppConstants.labelNoScheduledShifts);
 
-                    return DropdownButtonFormField<ShiftModel>(
-                      value: _selectedShift,
+                    return DropdownButtonFormField<String>(
+                      value: _selectedShiftId,
                       hint: const Text(AppConstants.labelSelect),
                       items: upcomingShifts.map((s) => DropdownMenuItem(
-                        value: s,
+                        value: s.id,
                         child: Text('${s.date} ${s.startTime}-${s.endTime}'),
                       )).toList(),
-                      onChanged: (v) => setState(() => _selectedShift = v),
+                      onChanged: (v) => setState(() => _selectedShiftId = v),
                       decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
                     );
                   },
@@ -216,7 +230,10 @@ class _ChangeRequestScreenState extends ConsumerState<ChangeRequestScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : _submitRequest,
+                    onPressed: _isLoading ? null : () {
+                      final shifts = shiftsAsync.value ?? [];
+                      _submitRequest(shifts);
+                    },
                     style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
                     child: _isLoading ? const CircularProgressIndicator() : const Text(AppConstants.labelSubmitRequest),
                   ),

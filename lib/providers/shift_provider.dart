@@ -28,7 +28,7 @@ final staffShiftsProvider = FutureProvider.family<List<ShiftModel>, StaffShiftQu
   );
 });
 
-// 代打募集中のシフト一覧を取得するプロバイダー
+// 交代募集中のシフト一覧を取得するプロバイダー
 final recruitingSubstitutesProvider = FutureProvider.family<List<ShiftModel>, String>((ref, storeId) async {
   final shiftRepository = ref.watch(shiftRepositoryProvider);
   return await shiftRepository.getRecruitingSubstitutes(storeId);

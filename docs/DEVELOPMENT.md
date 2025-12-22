@@ -69,7 +69,7 @@ flutter run -d chrome --web-port=8080
 - `/stores`: 店舗情報、サブスクリプションプラン、Stripe ID
 - `/users`: ユーザープロフィール、所属店舗 ID、ロール (admin/staff)
 - `/shifts`: シフトスケジュール（店舗 ID・スタッフ ID でフィルタリング）
-- `/shift_requests`: 欠勤・代打・変更申請のステータス管理
+- `/shift_requests`: 欠勤・交代・変更申請のステータス管理
 
 ## 5. デプロイ手順
 

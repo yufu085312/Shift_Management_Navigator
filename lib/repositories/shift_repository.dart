@@ -108,6 +108,7 @@ class ShiftRepository {
     String? status,
     String? requestStatus,
     String? requestId,
+    String? volunteerStaffId,
     bool clearRequest = false,
   }) async {
     final updates = <String, dynamic>{
@@ -118,10 +119,12 @@ class ShiftRepository {
     if (startTime != null) updates['startTime'] = startTime;
     if (endTime != null) updates['endTime'] = endTime;
     if (status != null) updates['status'] = status;
+    if (volunteerStaffId != null) updates['volunteerStaffId'] = volunteerStaffId;
     
     if (clearRequest) {
       updates['requestStatus'] = FieldValue.delete();
       updates['requestId'] = FieldValue.delete();
+      updates['volunteerStaffId'] = FieldValue.delete();
     } else {
       if (requestStatus != null) updates['requestStatus'] = requestStatus;
       if (requestId != null) updates['requestId'] = requestId;
@@ -171,7 +174,7 @@ class ShiftRepository {
     }
   }
 
-  // 代打を募集しているシフト一覧を取得
+  // 交代を募集しているシフト一覧を取得
   Future<List<ShiftModel>> getRecruitingSubstitutes(String storeId) async {
     try {
       final querySnapshot = await _firestore

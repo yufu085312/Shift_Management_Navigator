@@ -17,6 +17,7 @@ class ShiftModel with _$ShiftModel {
     @Default(AppConstants.shiftStatusDraft) String status, // "draft" or "confirmed"
     String? requestStatus, // "pending_change", "pending_substitute"
     String? requestId, // 関連する申請ID
+    String? volunteerStaffId, // 交代志願スタッフID
     @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
     DateTime? createdAt,
     @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)

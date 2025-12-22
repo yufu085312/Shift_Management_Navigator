@@ -217,7 +217,7 @@ class _$StoreModelImpl implements _StoreModel {
     required this.id,
     required this.name,
     required this.ownerId,
-    this.plan = 'free',
+    this.plan = AppConstants.planFree,
     final Map<String, dynamic> businessHours = const {},
     this.shiftUnitMinutes = 30,
     this.weekStart = 0,

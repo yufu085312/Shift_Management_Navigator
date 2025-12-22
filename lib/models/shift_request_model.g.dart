@@ -17,7 +17,7 @@ _$ShiftRequestModelImpl _$$ShiftRequestModelImplFromJson(
   startTime: json['startTime'] as String?,
   endTime: json['endTime'] as String?,
   reason: json['reason'] as String?,
-  status: json['status'] as String? ?? 'pending',
+  status: json['status'] as String? ?? AppConstants.requestStatusPending,
   targetShiftId: json['targetShiftId'] as String?,
   volunteerStaffId: json['volunteerStaffId'] as String?,
   createdAt: _timestampFromJson(json['createdAt']),

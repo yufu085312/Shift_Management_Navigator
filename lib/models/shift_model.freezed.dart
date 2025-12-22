@@ -32,6 +32,8 @@ mixin _$ShiftModel {
   String? get requestStatus =>
       throw _privateConstructorUsedError; // "pending_change", "pending_substitute"
   String? get requestId => throw _privateConstructorUsedError; // 関連する申請ID
+  String? get volunteerStaffId =>
+      throw _privateConstructorUsedError; // 交代志願スタッフID
   @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
   DateTime? get createdAt => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
@@ -64,6 +66,7 @@ abstract class $ShiftModelCopyWith<$Res> {
     String status,
     String? requestStatus,
     String? requestId,
+    String? volunteerStaffId,
     @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
     DateTime? createdAt,
     @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
@@ -95,6 +98,7 @@ class _$ShiftModelCopyWithImpl<$Res, $Val extends ShiftModel>
     Object? status = null,
     Object? requestStatus = freezed,
     Object? requestId = freezed,
+    Object? volunteerStaffId = freezed,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
   }) {
@@ -136,6 +140,10 @@ class _$ShiftModelCopyWithImpl<$Res, $Val extends ShiftModel>
                 ? _value.requestId
                 : requestId // ignore: cast_nullable_to_non_nullable
                       as String?,
+            volunteerStaffId: freezed == volunteerStaffId
+                ? _value.volunteerStaffId
+                : volunteerStaffId // ignore: cast_nullable_to_non_nullable
+                      as String?,
             createdAt: freezed == createdAt
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
@@ -169,6 +177,7 @@ abstract class _$$ShiftModelImplCopyWith<$Res>
     String status,
     String? requestStatus,
     String? requestId,
+    String? volunteerStaffId,
     @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
     DateTime? createdAt,
     @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
@@ -199,6 +208,7 @@ class __$$ShiftModelImplCopyWithImpl<$Res>
     Object? status = null,
     Object? requestStatus = freezed,
     Object? requestId = freezed,
+    Object? volunteerStaffId = freezed,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
   }) {
@@ -240,6 +250,10 @@ class __$$ShiftModelImplCopyWithImpl<$Res>
             ? _value.requestId
             : requestId // ignore: cast_nullable_to_non_nullable
                   as String?,
+        volunteerStaffId: freezed == volunteerStaffId
+            ? _value.volunteerStaffId
+            : volunteerStaffId // ignore: cast_nullable_to_non_nullable
+                  as String?,
         createdAt: freezed == createdAt
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
@@ -263,9 +277,10 @@ class _$ShiftModelImpl implements _ShiftModel {
     required this.date,
     required this.startTime,
     required this.endTime,
-    this.status = 'draft',
+    this.status = AppConstants.shiftStatusDraft,
     this.requestStatus,
     this.requestId,
+    this.volunteerStaffId,
     @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
     this.createdAt,
     @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
@@ -301,6 +316,9 @@ class _$ShiftModelImpl implements _ShiftModel {
   final String? requestId;
   // 関連する申請ID
   @override
+  final String? volunteerStaffId;
+  // 交代志願スタッフID
+  @override
   @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
   final DateTime? createdAt;
   @override
@@ -309,7 +327,7 @@ class _$ShiftModelImpl implements _ShiftModel {
 
   @override
   String toString() {
-    return 'ShiftModel(id: $id, storeId: $storeId, staffId: $staffId, date: $date, startTime: $startTime, endTime: $endTime, status: $status, requestStatus: $requestStatus, requestId: $requestId, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'ShiftModel(id: $id, storeId: $storeId, staffId: $staffId, date: $date, startTime: $startTime, endTime: $endTime, status: $status, requestStatus: $requestStatus, requestId: $requestId, volunteerStaffId: $volunteerStaffId, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -329,6 +347,8 @@ class _$ShiftModelImpl implements _ShiftModel {
                 other.requestStatus == requestStatus) &&
             (identical(other.requestId, requestId) ||
                 other.requestId == requestId) &&
+            (identical(other.volunteerStaffId, volunteerStaffId) ||
+                other.volunteerStaffId == volunteerStaffId) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
@@ -348,6 +368,7 @@ class _$ShiftModelImpl implements _ShiftModel {
     status,
     requestStatus,
     requestId,
+    volunteerStaffId,
     createdAt,
     updatedAt,
   );
@@ -377,6 +398,7 @@ abstract class _ShiftModel implements ShiftModel {
     final String status,
     final String? requestStatus,
     final String? requestId,
+    final String? volunteerStaffId,
     @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
     final DateTime? createdAt,
     @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
@@ -404,6 +426,8 @@ abstract class _ShiftModel implements ShiftModel {
   String? get requestStatus; // "pending_change", "pending_substitute"
   @override
   String? get requestId; // 関連する申請ID
+  @override
+  String? get volunteerStaffId; // 交代志願スタッフID
   @override
   @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
   DateTime? get createdAt;
