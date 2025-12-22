@@ -107,7 +107,7 @@ class AppConstants {
   static const String notifChangeRequestTitle = '時間変更申請';
 
   // Dashboard Labels
-  static const String labelDashboardMenuCreate = 'シフト作成・公開';
+  static const String labelDashboardMenuCreate = 'シフト管理';
   static const String labelDashboardMenuRequest = 'シフト申請';
   static const String labelDashboardMenuStaff = 'スタッフ管理';
   static const String labelDashboardMenuSub = 'サブスクリプション';
