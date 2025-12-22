@@ -7,7 +7,7 @@ final shiftRequestRepositoryProvider = Provider((ref) => ShiftRequestRepository(
 // 特定スタッフの申請一覧を取得するプロバイダー
 final staffRequestsProvider = FutureProvider.family<List<ShiftRequestModel>, StaffRequestQueryParams>((ref, params) async {
   final repository = ref.watch(shiftRequestRepositoryProvider);
-  return repository.getRequestsByStaff(params.staffId, params.storeId);
+  return repository.getRequestsByStaffOrVolunteer(params.staffId, params.storeId);
 });
 
 class StaffRequestQueryParams {

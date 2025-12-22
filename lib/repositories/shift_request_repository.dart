@@ -56,12 +56,30 @@ class ShiftRequestRepository {
     });
   }
 
-  // 代打を志願する
+  // 交代を志願する
   Future<void> volunteerForSubstitute(String requestId, String staffId) async {
-    await _firestore.collection(AppConstants.collectionShiftRequests).doc(requestId).update({
+    final batch = _firestore.batch();
+    final requestRef = _firestore.collection(AppConstants.collectionShiftRequests).doc(requestId);
+    
+    // 申請データを取得して対象シフトIDを特定
+    final requestDoc = await requestRef.get();
+    if (!requestDoc.exists) return;
+    
+    final targetShiftId = requestDoc.data()?['targetShiftId'] as String?;
+
+    batch.update(requestRef, {
       'volunteerStaffId': staffId,
       'updatedAt': Timestamp.fromDate(DateTime.now()),
     });
+
+    if (targetShiftId != null) {
+      batch.update(_firestore.collection(AppConstants.collectionShifts).doc(targetShiftId), {
+        'volunteerStaffId': staffId,
+        'updatedAt': Timestamp.fromDate(DateTime.now()),
+      });
+    }
+
+    await batch.commit();
   }
 
   // 特定店舗の申請一覧を取得(管理者用)
@@ -134,6 +152,44 @@ class ShiftRequestRepository {
       'status': status,
       'processedAt': Timestamp.fromDate(DateTime.now()),
     });
+  }
+
+  // 特定スタッフの申請一覧を取得(自身が提出した、または志願した申請)
+  Future<List<ShiftRequestModel>> getRequestsByStaffOrVolunteer(String staffId, String storeId) async {
+    // requesterとしての申請
+    final requesterQuery = await _firestore
+        .collection(AppConstants.collectionShiftRequests)
+        .where('storeId', isEqualTo: storeId)
+        .where('staffId', isEqualTo: staffId)
+        .get();
+
+    // volunteerとしての申請
+    final volunteerQuery = await _firestore
+        .collection(AppConstants.collectionShiftRequests)
+        .where('storeId', isEqualTo: storeId)
+        .where('volunteerStaffId', isEqualTo: staffId)
+        .get();
+
+    final allDocs = [...requesterQuery.docs, ...volunteerQuery.docs];
+    
+    // 重複を除去 (同じドキュメント ID を持つものを省く)
+    final seenIds = <String>{};
+    final requests = <ShiftRequestModel>[];
+    for (final doc in allDocs) {
+      if (!seenIds.contains(doc.id)) {
+        requests.add(ShiftRequestModel.fromFirestore(doc));
+        seenIds.add(doc.id);
+      }
+    }
+
+    // 最新順にソート
+    requests.sort((a, b) {
+      if (a.createdAt == null) return 1;
+      if (b.createdAt == null) return -1;
+      return b.createdAt!.compareTo(a.createdAt!);
+    });
+
+    return requests;
   }
 
   // 申請を削除

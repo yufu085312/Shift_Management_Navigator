@@ -11,7 +11,7 @@ _$StoreModelImpl _$$StoreModelImplFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String,
       name: json['name'] as String,
       ownerId: json['ownerId'] as String,
-      plan: json['plan'] as String? ?? 'free',
+      plan: json['plan'] as String? ?? AppConstants.planFree,
       businessHours: json['businessHours'] as Map<String, dynamic>? ?? const {},
       shiftUnitMinutes: (json['shiftUnitMinutes'] as num?)?.toInt() ?? 30,
       weekStart: (json['weekStart'] as num?)?.toInt() ?? 0,

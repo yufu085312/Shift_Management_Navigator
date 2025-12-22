@@ -166,11 +166,12 @@ class _MyShiftScreenState extends ConsumerState<MyShiftScreen> {
           return shiftsAsync.when(
             data: (shifts) => requestsAsync.when(
               data: (requests) {
-                // 申請中または却下された希望を抽出
-                final relevantWishes = requests.where((r) => 
-                  (r.status == AppConstants.requestStatusPending || r.status == AppConstants.requestStatusRejected) && 
-                  r.type == AppConstants.requestTypeWish
-                ).toList();
+                // 申請中または見送り（却下）された希望を抽出
+                final relevantWishes = requests.where((r) {
+                  final isPendingOrRejected = r.status == AppConstants.requestStatusPending || r.status == AppConstants.requestStatusRejected;
+                  // 本人の希望申請、または本人が志願している交代申請
+                  return isPendingOrRejected && (r.type == AppConstants.requestTypeWish || r.volunteerStaffId == staff.id);
+                }).toList();
 
                 return Column(
                   children: [
@@ -321,10 +322,16 @@ class _ShiftRequestItem extends StatelessWidget {
           style: const TextStyle(fontSize: 18),
         ),
         trailing: shift.requestId != null
-            ? const Chip(
-                label: Text(AppConstants.labelShiftRequesting),
+            ? Chip(
+                label: Text(shift.requestStatus == AppConstants.shiftRequestStatusPendingSubstitute
+                    ? (shift.volunteerStaffId != null 
+                        ? AppConstants.labelWaitSubstituteApproval 
+                        : AppConstants.labelSubstituteRequesting)
+                    : (shift.requestStatus == AppConstants.shiftRequestStatusPendingChange 
+                        ? AppConstants.labelChangeRequesting 
+                        : AppConstants.labelShiftRequesting)),
                 backgroundColor: Colors.orange,
-                labelStyle: TextStyle(color: Colors.white, fontSize: 12),
+                labelStyle: const TextStyle(color: Colors.white, fontSize: 12),
               )
             : null,
       ),
@@ -339,13 +346,14 @@ class _PendingWishItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isRejected = request.status == AppConstants.requestStatusRejected;
+    final bool isSubstitute = request.type == AppConstants.requestTypeSubstitute;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       color: isRejected ? Colors.red.shade50 : Colors.orange.shade50,
       child: ListTile(
         title: Text(
-          AppConstants.labelShiftWish,
+          isSubstitute ? AppConstants.labelSubstituteWish : AppConstants.labelShiftWish,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: isRejected ? Colors.red : Colors.orange,
@@ -356,7 +364,9 @@ class _PendingWishItem extends StatelessWidget {
           style: const TextStyle(fontSize: 18),
         ),
         trailing: Chip(
-          label: Text(isRejected ? AppConstants.labelRejected : AppConstants.labelShiftRequesting),
+          label: Text(isRejected 
+              ? AppConstants.labelRejected 
+              : (isSubstitute ? AppConstants.labelWaitSubstituteApproval : AppConstants.labelShiftRequesting)),
           backgroundColor: isRejected ? Colors.red : Colors.orange,
           labelStyle: const TextStyle(color: Colors.white, fontSize: 12),
         ),

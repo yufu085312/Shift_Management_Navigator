@@ -36,7 +36,7 @@ mixin _$ShiftRequestModel {
       throw _privateConstructorUsedError; // "pending", "承認", "見送り"
   String? get targetShiftId => throw _privateConstructorUsedError; // 対象シフトID
   String? get volunteerStaffId =>
-      throw _privateConstructorUsedError; // 代打志願スタッフID
+      throw _privateConstructorUsedError; // 交代志願スタッフID
   @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
   DateTime? get createdAt => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
@@ -294,7 +294,7 @@ class _$ShiftRequestModelImpl implements _ShiftRequestModel {
     this.startTime,
     this.endTime,
     this.reason,
-    this.status = 'pending',
+    this.status = AppConstants.requestStatusPending,
     this.targetShiftId,
     this.volunteerStaffId,
     @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
@@ -335,7 +335,7 @@ class _$ShiftRequestModelImpl implements _ShiftRequestModel {
   // 対象シフトID
   @override
   final String? volunteerStaffId;
-  // 代打志願スタッフID
+  // 交代志願スタッフID
   @override
   @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
   final DateTime? createdAt;
@@ -452,7 +452,7 @@ abstract class _ShiftRequestModel implements ShiftRequestModel {
   @override
   String? get targetShiftId; // 対象シフトID
   @override
-  String? get volunteerStaffId; // 代打志願スタッフID
+  String? get volunteerStaffId; // 交代志願スタッフID
   @override
   @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
   DateTime? get createdAt;

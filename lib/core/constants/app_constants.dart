@@ -65,7 +65,7 @@ class AppConstants {
   static const String titleAdminDashboard = '管理者ダッシュボード';
   static const String titleMyShift = 'マイシフト';
   static const String titleWishSubmission = 'シフト希望提出';
-  static const String titleChangeRequest = '変更・代打申請';
+  static const String titleChangeRequest = '変更・交代申請';
   static const String titleNotifications = '通知一覧';
   static const String titleStoreJoin = '店舗への参加';
 
@@ -103,7 +103,7 @@ class AppConstants {
 
   // Notification Messages
   static const String notifShiftPublishedTitle = 'シフトが公開されました';
-  static const String notifSubstituteTitle = '代打募集中';
+  static const String notifSubstituteTitle = '交代募集中';
   static const String notifChangeRequestTitle = '時間変更申請';
 
   // Dashboard Labels
@@ -161,16 +161,20 @@ class AppConstants {
 
   // Staff Screen Labels
   static const String labelMenu = 'メニュー';
-  static const String labelSubstituteRecruitment = '代打募集一覧';
+  static const String labelSubstituteRecruitment = '交代募集一覧';
   static const String labelShiftNoShifts = 'この日のシフトはありません';
   static const String labelShiftWaitingPublish = '作成中';
   static const String labelShiftRequesting = '申請中';
+  static const String labelSubstituteRequesting = '交代申請中';
+  static const String labelChangeRequesting = '変更申請中';
   static const String labelWorkingTime = '確定';
   static const String labelStaffNotFound = 'スタッフ情報が見つかりません';
 
   // Change/Substitute Request Labels
   static const String labelChangeTime = '時間変更';
-  static const String labelSubstituteWish = '代打希望';
+  static const String labelSubstituteWish = '交代希望';
+  static const String labelWaitSubstituteApproval = '交代承認待ち';
+  static const String labelAlreadyVolunteered = '交代志願済み';
   static const String valSelectTargetShift = '対象のシフトを選択してください';
   static const String valSetNewTime = '変更後の時間を指定してください';
   static const String labelSelectRequestType = '申請種類を選択';
@@ -200,7 +204,7 @@ class AppConstants {
   // Store Request Screen Labels
   static const String titleShiftRequestList = 'シフト申請一覧';
   static const String msgNoPendingRequests = '未処理の申請はありません';
-  static const String labelSubstituteStaff = '代打スタッフ';
+  static const String labelSubstituteStaff = '交代スタッフ';
   static const String msgVolunteerExists = '志願者あり';
   static const String msgShiftUpdateFailed = 'シフト反映に失敗しました';
   static const String labelApproved = '承認';
@@ -216,12 +220,13 @@ class AppConstants {
   static const String labelUnavailable = '利用不可';
 
   // Substitute Recruitment Labels
-  static const String labelTakeSubstitute = '代打を引き受ける';
+  static const String labelTakeSubstitute = '交代を引き受ける';
   static const String labelAccept = '引き受ける';
-  static const String msgNoSubstituteRecruitment = '現在募集中の代打はありません';
+  static const String labelVolunteerInProgress = '他の人が申請中';
+  static const String msgNoSubstituteRecruitment = '現在募集中の交代はありません';
   static const String labelOwnRecruitment = '自分の募集';
   static const String msgVolunteerSuccess = '志願しました。管理者の承認をお待ちください。';
-  static const String msgRecruitingSubstitute = '代打を募集中です';
+  static const String msgRecruitingSubstitute = '交代を募集中です';
   static const String msgOwnRecruitment = '募集中の自分のシフト';
 
   // Notification Screen Labels
@@ -232,12 +237,13 @@ class AppConstants {
 
   // Specific Message Labels
   static const String labelShiftWish = 'シフト希望';
-  static const String labelChangeRequest = '変更申請';
-  static const String msgAssignSubstituteTitle = '代打シフトが割り当てられました';
+  static const String labelChangeRequest = '時間変更申請';
+  static const String labelSubstituteRequest = '交代申請';
+  static const String msgAssignSubstituteTitle = '交代シフトが割り当てられました';
   static const String msgDeleteStaffConfirm = 'さんを削除してもよろしいですか?';
   static const String labelYen = '円';
   static const String msgSubstituteConfirm = 'のシフトを引き受けますか？\n（管理者の承認後に確定します）';
-  static const String msgRecruitSubstituteBody = 'さんが代打を募集しています。';
+  static const String msgRecruitSubstituteBody = 'さんが交代を募集しています。';
   static const String msgTimeChangeRequestBody = 'さんが時間の変更申請をしました。';
   static const String labelReasonHint = '例: 急用のため代わりをお願いしたいです。';
   static const String labelWishTimeHint = '希望時間(未指定の場合は終日)';
@@ -258,7 +264,7 @@ class AppConstants {
   static const String msgShiftPublishedBodySuffix = 'のシフトが公開されました。';
   static const String msgNotificationStatusSuffix = 'されました。';
   static const String msgSubstituteAssignBodySuffix = 'の代わりとしてシフトが割り当てられました。';
-  static const String msgVolunteerBodySuffix = 'が代打を志願しています。';
+  static const String msgVolunteerBodySuffix = 'が交代を志願しています。';
   static const String msgSharedToStaffSuffix = 'スタッフに共有してください。';
   static const String labelDateFormatFull = 'yyyy年M月d日(E)';
   static const String labelPersonSuffix = '名';
