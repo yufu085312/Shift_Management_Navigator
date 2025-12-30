@@ -36,6 +36,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     setState(() => _isLoading = true);
 
     try {
+      final messenger = ScaffoldMessenger.of(context);
       final signUp = ref.read(signUpProvider);
       await signUp(
         email: _emailController.text.trim(),
@@ -43,9 +44,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         name: _nameController.text.trim(),
         role: _selectedRole,
       );
+      
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(AppConstants.msgSignupSuccess),
+          backgroundColor: Colors.green,
+        ),
+      );
 
       if (mounted) {
-        // 登録成功後の処理は認証状態の監視で自動的に行われる
+        // 画面を閉じることで、AuthWrapper が切り替えた HomePage が表示されるようになります
+        Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
