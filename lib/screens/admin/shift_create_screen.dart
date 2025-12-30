@@ -8,6 +8,7 @@ import '../../providers/shift_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../models/shift_model.dart';
 import '../../models/staff_model.dart';
+import '../../models/user_model.dart';
 import '../../services/auto_assign_service.dart';
 import '../../services/notification_service.dart';
 import '../../providers/shift_request_provider.dart';
@@ -442,12 +443,25 @@ class _ShiftEditDialogState extends ConsumerState<_ShiftEditDialog> {
               title: const Text(AppConstants.labelSelectedDate),
               subtitle: Text(DateFormat(AppConstants.labelDateFormatFull, 'ja').format(widget.date)),
             ),
-            // スタッフ選択
             staffsAsync.when(
               data: (staffs) => DropdownButtonFormField<String>(
                 value: _selectedStaffId,
                 decoration: const InputDecoration(labelText: AppConstants.labelStaff),
-                items: staffs.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))).toList(),
+                items: staffs.map((s) {
+                  return DropdownMenuItem(
+                    value: s.id,
+                    child: FutureBuilder<UserModel?>(
+                      future: ref.read(authRepositoryProvider).getUserData(s.userId),
+                      builder: (context, snapshot) {
+                        final isManager = snapshot.data?.role == AppConstants.roleAdmin;
+                        return Text(
+                          '${s.name}${isManager ? AppConstants.labelManagerParen : ""}',
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      },
+                    ),
+                  );
+                }).toList(),
                 onChanged: widget.shift != null ? null : (v) => setState(() => _selectedStaffId = v),
               ),
               loading: () => const CircularProgressIndicator(),

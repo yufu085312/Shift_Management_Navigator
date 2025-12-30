@@ -49,13 +49,17 @@ void main() {
         ownerId: 'admin_001',
       );
 
+      final mockStaff = StaffModel(id: 's1', userId: 'u1', storeId: 'store_001', name: 'Staff A');
+      final mockStaffUser = UserModel(uid: 'u1', name: 'Staff A', email: 'u1@ex.com', role: AppConstants.roleStaff, storeId: 'store_001');
+      when(() => mockAuthRepository.getUserData('u1')).thenAnswer((_) async => mockStaffUser);
+
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             authRepositoryProvider.overrideWithValue(mockAuthRepository),
             currentUserProvider.overrideWith((ref) => mockUser),
             storeProvider.overrideWith((ref, _) => mockStore),
-            storeStaffsProvider.overrideWith((ref, _) => []),
+            storeStaffsProvider.overrideWith((ref, _) => [mockStaff]),
             storeShiftsProvider.overrideWith((ref, _) => []),
             storeRequestsProvider.overrideWith((ref, _) => []),
           ],

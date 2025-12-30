@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/staff_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../models/staff_model.dart';
+import '../../models/user_model.dart';
 import 'shift_create_screen.dart';
 import '../../core/constants/app_constants.dart';
 
@@ -99,53 +100,67 @@ class _StaffManagementScreenState extends ConsumerState<StaffManagementScreen> {
               Expanded(
                 child: staffsAsync.when(
                   data: (staffs) {
-                    if (staffs.isEmpty) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24.0),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.person_add_outlined,
-                                size: 80,
-                                color: Colors.blue.shade200,
-                              ),
-                              const SizedBox(height: 24),
-                              const Text(
-                                AppConstants.labelInviteStaff,
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
+                    final isAdminInStaffs = staffs.any((s) => s.userId == user.uid);
+                    
+                    return Column(
+                      children: [
+                        if (!isAdminInStaffs)
+                          _buildAdminRegisterCard(context, user),
+                        
+                        Expanded(
+                          child: staffs.isEmpty && isAdminInStaffs == false
+                            ? Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(24.0),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.person_add_outlined,
+                                        size: 80,
+                                        color: Colors.blue.shade200,
+                                      ),
+                                      const SizedBox(height: 24),
+                                      const Text(
+                                        AppConstants.labelInviteStaff,
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      const Text(
+                                        AppConstants.msgInviteNotice,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
+                              )
+                            : ListView.builder(
+                                itemCount: staffs.length,
+                                itemBuilder: (context, index) {
+                                  final staff = staffs[index];
+                                  return FutureBuilder<UserModel?>(
+                                    future: ref.read(authRepositoryProvider).getUserData(staff.userId),
+                                    builder: (context, snapshot) {
+                                      final staffUser = snapshot.data;
+                                      return _StaffListItem(
+                                        staff: staff,
+                                        isManager: staffUser?.role == AppConstants.roleAdmin,
+                                        onEdit: () => _showStaffDialog(context, staff: staff),
+                                        onDelete: () => _confirmDelete(context, staff),
+                                      );
+                                    },
+                                  );
+                                },
                               ),
-                              const SizedBox(height: 12),
-                              const Text(
-                                AppConstants.msgInviteNotice,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              const SizedBox(height: 32),
-                              _buildInviteCard(context, user.storeId!),
-                            ],
-                          ),
                         ),
-                      );
-                    }
-
-                    return ListView.builder(
-                      itemCount: staffs.length,
-                      itemBuilder: (context, index) {
-                        final staff = staffs[index];
-                        return _StaffListItem(
-                          staff: staff,
-                          onEdit: () => _showStaffDialog(context, staff: staff),
-                          onDelete: () => _confirmDelete(context, staff),
-                        );
-                      },
+                      ],
                     );
                   },
                   loading: () => const Center(child: CircularProgressIndicator()),
@@ -166,7 +181,7 @@ class _StaffManagementScreenState extends ConsumerState<StaffManagementScreen> {
             onPressed: () {
               Clipboard.setData(ClipboardData(text: user!.storeId!));
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('${AppConstants.msgIdCopied}。${AppConstants.msgSharedToStaffSuffix}')),
+                SnackBar(content: Text('${AppConstants.msgIdCopied}。${AppConstants.msgSharedToStaffSuffix}')),
               );
             },
             icon: const Icon(Icons.copy),
@@ -175,6 +190,45 @@ class _StaffManagementScreenState extends ConsumerState<StaffManagementScreen> {
           );
         },
         orElse: () => null,
+      ),
+    );
+  }
+
+  Widget _buildAdminRegisterCard(BuildContext context, UserModel user) {
+    return Card(
+      margin: const EdgeInsets.all(16),
+      color: Colors.blue.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            const Text(
+              AppConstants.msgAdminRegisterPrompt,
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              AppConstants.msgAdminRegisterDetail,
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () async {
+                final staffRepository = ref.read(staffRepositoryProvider);
+                await staffRepository.joinStore(
+                  userId: user.uid,
+                  storeId: user.storeId!,
+                  name: user.name,
+                );
+                ref.invalidate(storeStaffsProvider);
+                ref.invalidate(staffCountProvider);
+              },
+              icon: const Icon(Icons.person_add),
+              label: const Text(AppConstants.labelRegisterSelfAsStaff),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -275,11 +329,13 @@ class _StaffManagementScreenState extends ConsumerState<StaffManagementScreen> {
 
 class _StaffListItem extends StatelessWidget {
   final StaffModel staff;
+  final bool isManager;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _StaffListItem({
     required this.staff,
+    this.isManager = false,
     required this.onEdit,
     required this.onDelete,
   });
@@ -292,13 +348,35 @@ class _StaffListItem extends StatelessWidget {
         leading: CircleAvatar(
           backgroundColor: Colors.blue.shade100,
           child: Text(
-            staff.name.isNotEmpty ? staff.name[0] : '?',
+            staff.name.isNotEmpty ? staff.name[0] : AppConstants.labelNone,
             style: const TextStyle(color: Colors.blue),
           ),
         ),
-        title: Text(
-          staff.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                staff.name,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (isManager) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.blue,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  AppConstants.labelManager,
+                  style: TextStyle(color: Colors.white, fontSize: 10),
+                ),
+              ),
+            ],
+          ],
         ),
         subtitle: Text('${AppConstants.labelHourlyWage}: ¥${staff.hourlyWage.toString().replaceAllMapped(
               RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),

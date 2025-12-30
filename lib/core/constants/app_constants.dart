@@ -150,6 +150,11 @@ class AppConstants {
   static const String labelRoleAdminDescription = '管理者(店長・オーナー)';
   static const String labelRoleStaffDescription = 'スタッフ(アルバイト・パート)';
   static const String labelRegister = '登録';
+  static const String labelManager = '管理者';
+  static const String labelManagerParen = ' (管理者)';
+  static const String labelRegisterSelfAsStaff = '自分をスタッフとして登録';
+  static const String msgAdminRegisterPrompt = '管理者のあなたもシフトに追加しますか？';
+  static const String msgAdminRegisterDetail = '自分をスタッフとして登録することで、シフト表に自分を割り当てられるようになります。';
 
   // Join Store Labels
   static const String labelStoreId = '店舗ID';

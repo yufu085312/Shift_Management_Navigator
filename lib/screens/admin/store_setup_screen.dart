@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/staff_provider.dart';
 import '../../providers/store_provider.dart';
 import '../admin/staff_management_screen.dart';
 import '../../core/constants/app_constants.dart';
@@ -47,6 +48,14 @@ class _StoreSetupScreenState extends ConsumerState<StoreSetupScreen> {
       await authRepository.updateUserData(
         uid: currentUser.uid,
         storeId: store.id,
+      );
+
+      // オーナーをスタッフとしても登録 (過去に登録があれば再利用)
+      final staffRepository = ref.read(staffRepositoryProvider);
+      await staffRepository.joinStore(
+        userId: currentUser.uid,
+        storeId: store.id,
+        name: currentUser.displayName ?? AppConstants.labelManager,
       );
 
       if (mounted) {
