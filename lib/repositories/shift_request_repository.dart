@@ -3,7 +3,10 @@ import '../models/shift_request_model.dart';
 import '../core/constants/app_constants.dart';
 
 class ShiftRequestRepository {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
+
+  ShiftRequestRepository({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance;
 
   // 申請を作成
   Future<ShiftRequestModel> createRequest({

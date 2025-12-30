@@ -226,21 +226,23 @@ class _RequestListItem extends ConsumerWidget {
             endDate: request.date,
           );
           
-          if (existingShifts.isNotEmpty) {
-            final shift = existingShifts.first;
-            
-            // 交代の場合はスタッフIDも変更する
-            final String? newStaffId = request.type == AppConstants.requestTypeSubstitute ? selectedSubstituteId : null;
-
-            await shiftRepository.updateShift(
-              shiftId: shift.id,
-              staffId: newStaffId,
-              startTime: request.startTime ?? shift.startTime,
-              endTime: request.endTime ?? shift.endTime,
-              status: shift.status,
-              clearRequest: true,
-            );
+          if (existingShifts.isEmpty) {
+            throw Exception('対象日のシフトが見つかりません');
           }
+          
+          final shift = existingShifts.first;
+          
+          // 交代の場合はスタッフIDも変更する
+          final String? newStaffId = request.type == AppConstants.requestTypeSubstitute ? selectedSubstituteId : null;
+
+          await shiftRepository.updateShift(
+            shiftId: shift.id,
+            staffId: newStaffId,
+            startTime: request.startTime ?? shift.startTime,
+            endTime: request.endTime ?? shift.endTime,
+            status: shift.status,
+            clearRequest: true,
+          );
         }
       } catch (e) {
         if (context.mounted) {

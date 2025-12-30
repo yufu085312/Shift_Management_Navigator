@@ -4,8 +4,14 @@ import '../models/user_model.dart';
 import '../core/constants/app_constants.dart';
 
 class AuthRepository {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth;
+  final FirebaseFirestore _firestore;
+
+  AuthRepository({
+    FirebaseAuth? auth,
+    FirebaseFirestore? firestore,
+  })  : _auth = auth ?? FirebaseAuth.instance,
+        _firestore = firestore ?? FirebaseFirestore.instance;
 
   // 現在のユーザーを取得
   User? get currentUser => _auth.currentUser;
@@ -136,7 +142,9 @@ class AuthRepository {
         return AppConstants.labelPasswordHelper;
       case 'user-not-found':
       case 'wrong-password':
-        return AppConstants.errMsgInvalidCred;
+      case 'invalid-credential':
+      case 'invalid-login-credentials':
+        return 'メールアドレスまたはパスワードが間違っています';
       case 'too-many-requests':
         return AppConstants.errMsgTooManyRequests;
       case 'user-disabled':
@@ -144,7 +152,7 @@ class AuthRepository {
       case 'operation-not-allowed':
         return AppConstants.errMsgOpNotAllowed;
       default:
-        return '${AppConstants.errMsgAuth}: ${e.message}';
+        return '${AppConstants.errMsgAuth}: ${e.code}';
     }
   }
 }
