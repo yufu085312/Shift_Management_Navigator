@@ -3,7 +3,10 @@ import '../models/store_model.dart';
 import '../core/constants/app_constants.dart';
 
 class StoreRepository {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
+
+  StoreRepository({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance;
 
   // 店舗を作成
   Future<StoreModel> createStore({
