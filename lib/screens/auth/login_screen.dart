@@ -31,15 +31,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
+      final messenger = ScaffoldMessenger.of(context);
       final signIn = ref.read(signInProvider);
       await signIn(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
       
-      if (mounted) {
-        // ログイン成功後の処理は認証状態の監視で自動的に行われる
-      }
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(AppConstants.msgLoginSuccess),
+          backgroundColor: Colors.green,
+        ),
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

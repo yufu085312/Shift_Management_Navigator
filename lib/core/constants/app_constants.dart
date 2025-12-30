@@ -75,6 +75,8 @@ class AppConstants {
   static const String msgDeleteSuccess = '削除しました';
   static const String msgPublishSuccess = 'シフトを公開しました';
   static const String msgUpdateComplete = '情報を更新しました';
+  static const String msgSignupSuccess = '登録が完了しました';
+  static const String msgLoginSuccess = 'ログインに成功しました';
   static const String msgRequestSubmitted = '申請を提出しました';
   static const String msgJoinSuccess = '店舗に参加しました！';
 
