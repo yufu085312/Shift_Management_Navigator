@@ -90,11 +90,16 @@ class StaffRepository {
       'isActive': false,
     });
     
-    // 2. users ドキュメントの storeId をクリア
+    // 2. users ドキュメントの storeId をクリア (管理者の場合は店舗アクセス権を維持するためスキップ)
     if (userId.isNotEmpty) {
-      batch.update(_firestore.collection(AppConstants.collectionUsers).doc(userId), {
-        'storeId': null,
-      });
+      final userDoc = await _firestore.collection(AppConstants.collectionUsers).doc(userId).get();
+      final userRole = userDoc.data()?['role'] as String?;
+      
+      if (userRole != AppConstants.roleAdmin) {
+        batch.update(_firestore.collection(AppConstants.collectionUsers).doc(userId), {
+          'storeId': null,
+        });
+      }
     }
 
     // 3. 未来のシフトを削除
@@ -163,7 +168,7 @@ class StaffRepository {
     required String storeId,
     required String name,
   }) async {
-    // すでに同じ店舗に登録されているか確認
+    // すでに同じ店舗に登録されているか確認 (isActiveに関わらず取得)
     final querySnapshot = await _firestore
         .collection(AppConstants.collectionStaffs)
         .where('userId', isEqualTo: userId)
@@ -172,7 +177,7 @@ class StaffRepository {
         .get();
 
     if (querySnapshot.docs.isNotEmpty) {
-      // すでに登録済みならisActiveをtrueにする
+      // すでに登録済み（または過去に登録されていた）ならisActiveをtrueにする
       await querySnapshot.docs.first.reference.update({
         'isActive': true,
         'name': name,
