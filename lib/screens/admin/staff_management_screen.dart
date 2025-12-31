@@ -145,17 +145,24 @@ class _StaffManagementScreenState extends ConsumerState<StaffManagementScreen> {
                                 itemCount: staffs.length,
                                 itemBuilder: (context, index) {
                                   final staff = staffs[index];
-                                  return FutureBuilder<UserModel?>(
-                                    future: ref.read(authRepositoryProvider).getUserData(staff.userId),
-                                    builder: (context, snapshot) {
-                                      final staffUser = snapshot.data;
-                                      return _StaffListItem(
-                                        staff: staff,
-                                        isManager: staffUser?.role == AppConstants.roleAdmin,
-                                        onEdit: () => _showStaffDialog(context, staff: staff),
-                                        onDelete: () => _confirmDelete(context, staff),
-                                      );
-                                    },
+                                  final staffUserAsync = ref.watch(userDataProvider(staff.userId));
+                                  return staffUserAsync.when(
+                                    data: (staffUser) => _StaffListItem(
+                                      staff: staff,
+                                      isManager: staffUser?.role == AppConstants.roleAdmin,
+                                      onEdit: () => _showStaffDialog(context, staff: staff),
+                                      onDelete: () => _confirmDelete(context, staff),
+                                    ),
+                                    loading: () => const Card(
+                                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                      child: ListTile(title: Text('読み込み中...')),
+                                    ),
+                                    error: (error, _) => _StaffListItem(
+                                      staff: staff,
+                                      isManager: false,
+                                      onEdit: () => _showStaffDialog(context, staff: staff),
+                                      onDelete: () => _confirmDelete(context, staff),
+                                    ),
                                   );
                                 },
                               ),
@@ -441,12 +448,21 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
     try {
       final staffRepository = ref.read(staffRepositoryProvider);
       
-      // 更新のみ
+      // スタッフ情報の更新
       await staffRepository.updateStaff(
         staffId: widget.staff.id,
         name: _nameController.text.trim(),
         hourlyWage: int.tryParse(_wageController.text) ?? 0,
       );
+
+      // ユーザー情報も同期 (ユーザーIDがある場合)
+      if (widget.staff.userId.isNotEmpty) {
+        final authRepository = ref.read(authRepositoryProvider);
+        await authRepository.updateUserData(
+          uid: widget.staff.userId,
+          name: _nameController.text.trim(),
+        );
+      }
 
       if (mounted) {
         ref.invalidate(storeStaffsProvider);

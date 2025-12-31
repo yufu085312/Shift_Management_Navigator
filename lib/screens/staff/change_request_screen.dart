@@ -219,9 +219,11 @@ class _ChangeRequestScreenState extends ConsumerState<ChangeRequestScreen> {
                 const SizedBox(height: 8),
                 TextField(
                   controller: _reasonController,
-                  decoration: const InputDecoration(
-                    hintText: AppConstants.labelReasonHint,
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    hintText: _requestType == AppConstants.requestTypeChange
+                        ? AppConstants.labelReasonHintChange
+                        : AppConstants.labelReasonHint,
+                    border: const OutlineInputBorder(),
                   ),
                   maxLines: 3,
                 ),
