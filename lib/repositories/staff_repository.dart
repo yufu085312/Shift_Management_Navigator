@@ -1,10 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:intl/intl.dart';
 import '../models/staff_model.dart';
 import '../core/constants/app_constants.dart';
 
 class StaffRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  static const String _dateFormatPattern = 'yyyy-MM-dd';
 
   // スタッフを作成
   Future<StaffModel> createStaff({
@@ -17,12 +20,12 @@ class StaffRepository {
     final docRef = _firestore.collection(AppConstants.collectionStaffs).doc();
 
     final staffData = {
-      'userId': userId,
-      'storeId': storeId,
-      'name': name,
-      'hourlyWage': hourlyWage ?? 0,
-      'isActive': true,
-      'createdAt': Timestamp.fromDate(now),
+      AppConstants.fieldUserId: userId,
+      AppConstants.fieldStoreId: storeId,
+      AppConstants.fieldName: name,
+      AppConstants.fieldHourlyWage: hourlyWage ?? 0,
+      AppConstants.fieldIsActive: true,
+      AppConstants.fieldCreatedAt: Timestamp.fromDate(now),
     };
 
     await docRef.set(staffData);
@@ -49,7 +52,7 @@ class StaffRepository {
     try {
       final querySnapshot = await _firestore
           .collection(AppConstants.collectionStaffs)
-          .where('storeId', isEqualTo: storeId)
+          .where(AppConstants.fieldStoreId, isEqualTo: storeId)
           .get();
 
       final allStaffs = querySnapshot.docs
@@ -71,9 +74,9 @@ class StaffRepository {
     bool? isActive,
   }) async {
     final updates = <String, dynamic>{};
-    if (name != null) updates['name'] = name;
-    if (hourlyWage != null) updates['hourlyWage'] = hourlyWage;
-    if (isActive != null) updates['isActive'] = isActive;
+    if (name != null) updates[AppConstants.fieldName] = name;
+    if (hourlyWage != null) updates[AppConstants.fieldHourlyWage] = hourlyWage;
+    if (isActive != null) updates[AppConstants.fieldIsActive] = isActive;
 
     if (updates.isNotEmpty) {
       await _firestore.collection(AppConstants.collectionStaffs).doc(staffId).update(updates);
@@ -83,21 +86,21 @@ class StaffRepository {
   // スタッフを削除(無効化)し、関連データをクリーンアップ
   Future<void> deleteStaff(String staffId, String userId) async {
     final batch = _firestore.batch();
-    final nowStr = DateTime.now().toIso8601String().split('T')[0];
+    final nowStr = DateFormat(_dateFormatPattern).format(DateTime.now());
     
     // 1. staffs ドキュメントを無効化
     batch.update(_firestore.collection(AppConstants.collectionStaffs).doc(staffId), {
-      'isActive': false,
+      AppConstants.fieldIsActive: false,
     });
     
     // 2. users ドキュメントの storeId をクリア (管理者の場合は店舗アクセス権を維持するためスキップ)
     if (userId.isNotEmpty) {
       final userDoc = await _firestore.collection(AppConstants.collectionUsers).doc(userId).get();
-      final userRole = userDoc.data()?['role'] as String?;
+      final userRole = userDoc.data()?[AppConstants.fieldRole] as String?;
       
       if (userRole != AppConstants.roleAdmin) {
         batch.update(_firestore.collection(AppConstants.collectionUsers).doc(userId), {
-          'storeId': null,
+          AppConstants.fieldStoreId: null,
         });
       }
     }
@@ -105,11 +108,11 @@ class StaffRepository {
     // 3. 未来のシフトを削除
     final shiftsSnapshot = await _firestore
         .collection(AppConstants.collectionShifts)
-        .where('staffId', isEqualTo: staffId)
+        .where(AppConstants.fieldStaffId, isEqualTo: staffId)
         .get();
     
     for (var doc in shiftsSnapshot.docs) {
-      final date = doc.data()['date'] as String;
+      final date = doc.data()[AppConstants.fieldDate] as String;
       if (date.compareTo(nowStr) >= 0) {
         batch.delete(doc.reference);
       }
@@ -118,7 +121,7 @@ class StaffRepository {
     // 4. 全ての申請(シフト希望・変更申請など)を削除
     final requestsSnapshot = await _firestore
         .collection(AppConstants.collectionShiftRequests)
-        .where('staffId', isEqualTo: staffId)
+        .where(AppConstants.fieldStaffId, isEqualTo: staffId)
         .get();
 
     for (var doc in requestsSnapshot.docs) {
@@ -133,8 +136,8 @@ class StaffRepository {
     try {
       final querySnapshot = await _firestore
           .collection(AppConstants.collectionStaffs)
-          .where('userId', isEqualTo: userId)
-          .where('storeId', isEqualTo: storeId)
+          .where(AppConstants.fieldUserId, isEqualTo: userId)
+          .where(AppConstants.fieldStoreId, isEqualTo: storeId)
           .limit(1)
           .get();
 
@@ -150,8 +153,8 @@ class StaffRepository {
     try {
       final querySnapshot = await _firestore
           .collection(AppConstants.collectionStaffs)
-          .where('userId', isEqualTo: userId)
-          .where('isActive', isEqualTo: true)
+          .where(AppConstants.fieldUserId, isEqualTo: userId)
+          .where(AppConstants.fieldIsActive, isEqualTo: true)
           .limit(1)
           .get();
 
@@ -171,16 +174,16 @@ class StaffRepository {
     // すでに同じ店舗に登録されているか確認 (isActiveに関わらず取得)
     final querySnapshot = await _firestore
         .collection(AppConstants.collectionStaffs)
-        .where('userId', isEqualTo: userId)
-        .where('storeId', isEqualTo: storeId)
+        .where(AppConstants.fieldUserId, isEqualTo: userId)
+        .where(AppConstants.fieldStoreId, isEqualTo: storeId)
         .limit(1)
         .get();
 
     if (querySnapshot.docs.isNotEmpty) {
       // すでに登録済み（または過去に登録されていた）ならisActiveをtrueにする
       await querySnapshot.docs.first.reference.update({
-        'isActive': true,
-        'name': name,
+        AppConstants.fieldIsActive: true,
+        AppConstants.fieldName: name,
       });
     } else {
       // 新規でスタッフデータを作成
@@ -193,28 +196,72 @@ class StaffRepository {
     }
   }
 
+
   // 店舗から退出(ユーザーと店舗の紐付けを解除)
-  // Cloud Functions を使ってクリーンアップ処理を実行
+  // スタッフ情報の無効化、未来のシフトと申請の削除を行う
   Future<void> leaveStore({
     required String userId,
     required String storeId,
   }) async {
     try {
-      // Cloud Functions を呼び出してクリーンアップ
-      final functions = FirebaseFunctions.instance;
+      final batch = _firestore.batch();
       
-      // 開発環境ではエミュレータを使用
-      // 本番環境では自動的に本番の Functions を使用
-      if (const String.fromEnvironment('USE_FIREBASE_EMULATOR', defaultValue: 'true') == 'true') {
-        functions.useFunctionsEmulator('127.0.0.1', 5001);
+      // 1. スタッフ情報を取得（userId のみでクエリし、インデックス不要にする）
+      final staffQuery = await _firestore
+          .collection(AppConstants.collectionStaffs)
+          .where(AppConstants.fieldUserId, isEqualTo: userId)
+          .get();
+      
+      // storeId でフィルタリング
+      final staffDocs = staffQuery.docs.where((doc) => doc.data()[AppConstants.fieldStoreId] == storeId).toList();
+      
+      if (staffDocs.isEmpty) {
+        throw Exception('スタッフ情報が見つかりません');
       }
       
-      final callable = functions.httpsCallable('leaveStoreCleanup');
+      final staffDoc = staffDocs.first;
+      final staffId = staffDoc.id;
       
-      await callable.call({
-        'userId': userId,
-        'storeId': storeId,
-      });
+      // 2. スタッフ情報を無効化
+      batch.update(staffDoc.reference, {AppConstants.fieldIsActive: false});
+
+      // 3. ユーザー情報の店舗IDをクリア
+      final userDocRef = _firestore.collection(AppConstants.collectionUsers).doc(userId);
+      batch.update(userDocRef, {AppConstants.fieldStoreId: null});
+      
+      // 4. 本日以降のシフトを削除（staffId のみでクエリし、インデックス不要にする）
+      final today = DateFormat(_dateFormatPattern).format(DateTime.now());
+      final shiftsQuery = await _firestore
+          .collection(AppConstants.collectionShifts)
+          .where(AppConstants.fieldStaffId, isEqualTo: staffId)
+          .get();
+      
+      // 日付と storeId でフィルタリング
+      for (var doc in shiftsQuery.docs) {
+        final data = doc.data();
+        final shiftDate = data[AppConstants.fieldDate] as String;
+        final shiftStoreId = data[AppConstants.fieldStoreId] as String;
+        
+        if (shiftStoreId == storeId && shiftDate.compareTo(today) >= 0) {
+          batch.delete(doc.reference);
+        }
+      }
+      
+      // 5. すべての申請を削除（staffId のみでクエリ）
+      final requestsQuery = await _firestore
+          .collection(AppConstants.collectionShiftRequests)
+          .where(AppConstants.fieldStaffId, isEqualTo: staffId)
+          .get();
+      
+      // storeId でフィルタリング
+      for (var doc in requestsQuery.docs) {
+        if (doc.data()[AppConstants.fieldStoreId] == storeId) {
+          batch.delete(doc.reference);
+        }
+      }
+      
+      // バッチ処理を実行
+      await batch.commit();
     } catch (e) {
       throw Exception('店舗退出処理に失敗しました: $e');
     }
@@ -225,7 +272,7 @@ class StaffRepository {
     try {
       final querySnapshot = await _firestore
           .collection(AppConstants.collectionStaffs)
-          .where('storeId', isEqualTo: storeId)
+          .where(AppConstants.fieldStoreId, isEqualTo: storeId)
           .get();
 
       final allStaffs = querySnapshot.docs

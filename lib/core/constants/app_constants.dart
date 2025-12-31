@@ -7,6 +7,22 @@ class AppConstants {
   static const String collectionNotifications = 'notifications';
   static const String collectionStaffs = 'staffs';
 
+  // Firestore Field Names
+  static const String fieldUserId = 'userId';
+  static const String fieldStaffId = 'staffId';
+  static const String fieldStoreId = 'storeId';
+  static const String fieldName = 'name';
+  static const String fieldHourlyWage = 'hourlyWage';
+  static const String fieldIsActive = 'isActive';
+  static const String fieldCreatedAt = 'createdAt';
+  static const String fieldUpdatedAt = 'updatedAt';
+  static const String fieldDate = 'date';
+  static const String fieldStartTime = 'startTime';
+  static const String fieldEndTime = 'endTime';
+  static const String fieldRole = 'role';
+  static const String fieldStatus = 'status';
+  static const String fieldType = 'type';
+
   // Plans
   static const String planFree = 'free';
   static const String planBasic = 'basic';
