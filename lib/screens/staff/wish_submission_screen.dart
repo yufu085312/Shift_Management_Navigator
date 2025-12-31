@@ -90,6 +90,7 @@ class _WishSubmissionScreenState extends ConsumerState<WishSubmissionScreen> {
             const Text(AppConstants.valSelectDate, style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             TableCalendar(
+              locale: 'ja_JP',
               firstDay: DateTime.now(),
               lastDay: DateTime.now().add(const Duration(days: 90)),
               focusedDay: _focusedDay,

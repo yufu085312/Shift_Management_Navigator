@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -21,7 +22,7 @@ void main() async {
   );
   
   // 日本語ロケール初期化
-  await initializeDateFormatting('ja');
+  await initializeDateFormatting('ja_JP');
   
   runApp(
     const ProviderScope(
@@ -42,6 +43,15 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('ja', 'JP'),
+      ],
+      locale: const Locale('ja', 'JP'),
       home: const AuthWrapper(),
     );
   }
