@@ -66,3 +66,9 @@ final signOutProvider = Provider<Future<void> Function()>((ref) {
   final authRepository = ref.watch(authRepositoryProvider);
   return () => authRepository.signOut();
 });
+
+// 指定したユーザーIDのユーザー情報を取得するプロバイダー
+final userDataProvider = FutureProvider.family<UserModel?, String>((ref, uid) async {
+  final authRepository = ref.watch(authRepositoryProvider);
+  return await authRepository.getUserData(uid);
+});

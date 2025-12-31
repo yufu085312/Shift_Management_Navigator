@@ -68,6 +68,7 @@ class AppConstants {
   static const String titleChangeRequest = '変更・交代申請';
   static const String titleNotifications = '通知一覧';
   static const String titleStoreJoin = '店舗への参加';
+  static const String titleAccountSettings = 'アカウント設定';
 
   // Success Messages
   static const String msgUpdateSuccess = '最新の情報を取得しました';
@@ -253,6 +254,7 @@ class AppConstants {
   static const String msgRecruitSubstituteBody = 'さんが交代を募集しています。';
   static const String msgTimeChangeRequestBody = 'さんが時間の変更申請をしました。';
   static const String labelReasonHint = '例: 急用のため代わりをお願いしたいです。';
+  static const String labelReasonHintChange = '例: 通院のため時間を変更したいです。';
   static const String labelWishTimeHint = '希望時間(未指定の場合は終日)';
   static const String labelSelectedDate = '選択日';
   static const String labelDraft = '下書き';
@@ -266,7 +268,7 @@ class AppConstants {
   static const String labelFreePlan = 'Free プラン';
   static const String labelBasicPlan = 'Basic プラン';
   static const String labelProPlan = 'Pro プラン';
-  static const String labelReasonDefaultHint = '例: 通院のため';
+  static const String labelReasonDefaultHint = '例: 一日入れます！';
   static const String labelHonorificStaff = ' さん';
   static const String msgShiftPublishedBodySuffix = 'のシフトが公開されました。';
   static const String msgNotificationStatusSuffix = 'されました。';
