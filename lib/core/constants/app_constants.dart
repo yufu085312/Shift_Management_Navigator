@@ -69,6 +69,7 @@ class AppConstants {
   static const String titleNotifications = '通知一覧';
   static const String titleStoreJoin = '店舗への参加';
   static const String titleAccountSettings = 'アカウント設定';
+  static const String titleShiftSchedule = 'シフト表';
 
   // Success Messages
   static const String msgUpdateSuccess = '最新の情報を取得しました';
@@ -170,6 +171,7 @@ class AppConstants {
   // Staff Screen Labels
   static const String labelMenu = 'メニュー';
   static const String labelSubstituteRecruitment = '交代募集一覧';
+  static const String labelShiftSchedule = 'シフト表';
   static const String labelShiftNoShifts = 'この日のシフトはありません';
   static const String labelShiftWaitingPublish = '作成中';
   static const String labelShiftRequesting = '申請中';
