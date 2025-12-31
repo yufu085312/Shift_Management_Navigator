@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
@@ -31,6 +32,15 @@ void main() {
         currentStaffProvider.overrideWith((ref) => mockStaff),
       ],
       child: const MaterialApp(
+        localizationsDelegates: [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: [
+          Locale('ja', 'JP'),
+        ],
+        locale: Locale('ja', 'JP'),
         home: WishSubmissionScreen(),
       ),
     );

@@ -48,6 +48,7 @@ class _ShiftCreateScreenState extends ConsumerState<ShiftCreateScreen> {
       body: Column(
         children: [
           TableCalendar(
+            locale: 'ja_JP',
             firstDay: DateTime.now().subtract(const Duration(days: 365)),
             lastDay: DateTime.now().add(const Duration(days: 365)),
             focusedDay: _focusedDay,
