@@ -11,6 +11,7 @@ import 'wish_submission_screen.dart';
 import 'change_request_screen.dart';
 import 'notifications_screen.dart';
 import 'substitute_recruitment_screen.dart';
+import 'shift_schedule_screen.dart';
 import 'account_settings_screen.dart';
 import '../../providers/shift_request_provider.dart';
 import '../../core/constants/app_constants.dart';
@@ -136,6 +137,16 @@ class _MyShiftScreenState extends ConsumerState<MyShiftScreen> {
                 Navigator.pop(context);
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (context) => const SubstituteRecruitmentScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.calendar_view_month),
+              title: const Text(AppConstants.labelShiftSchedule),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const ShiftScheduleScreen()),
                 );
               },
             ),
